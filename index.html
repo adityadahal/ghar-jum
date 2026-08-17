@@ -14,12 +14,22 @@
     --display:"Bakbak One",Impact,sans-serif; --body:"Mukta",system-ui,sans-serif;
   }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;overflow:hidden}
+  html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;
+    -webkit-text-size-adjust:100%}
+  /* the sunset has to land ON the horizon, which sits about a third of the way
+     down the screen — pushed any lower and the hills hide all the warmth */
   body{font-family:var(--body);color:#fff;
-    background:linear-gradient(#0B1226 0%,#16223E 24%,#3C4668 45%,#8A5C48 68%,#DE8B52 86%,#F2BE7C 100%)}
+    transition:background 1.1s ease;
+    background:linear-gradient(#0A1126 0%,#1D2B4C 19%,#4C4A6B 33%,#96654A 43%,
+      #DE8B52 53%,#F2BE7C 68%,#F7DCAC 100%)}
+  /* after dark the sunset is gone and only a thin afterglow is left on the ridge */
+  body.night{background:linear-gradient(#01030A 0%,#050916 18%,#0A1226 34%,#131C34 45%,
+      #1D2440 55%,#2A2C48 72%,#3A3550 100%)}
   #scene{position:fixed;inset:0;display:block}
-  #veil{position:fixed;inset:0;pointer-events:none;
+  #veil{position:fixed;inset:0;pointer-events:none;transition:background 1.1s ease;
     background:radial-gradient(125% 82% at 50% 16%,transparent 42%,rgba(8,11,26,.6) 100%)}
+  body.night #veil{
+    background:radial-gradient(125% 82% at 50% 16%,transparent 30%,rgba(2,4,12,.82) 100%)}
   #ytwrap{position:fixed;left:-10000px;top:0;width:320px;height:180px}
 
   #board{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
@@ -78,7 +88,7 @@
   @media (prefers-reduced-motion:reduce){#van .bob{animation:none}}
 
   button{font-family:var(--body);color:inherit;background:transparent;border:0;
-    padding:0;line-height:0;cursor:pointer}
+    padding:0;line-height:0;cursor:pointer;touch-action:manipulation}
   button:focus-visible{outline:2px solid #fff;outline-offset:2px}
   .icon{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;
     color:rgba(255,255,255,.82);transition:background .15s,color .15s,transform .1s}
@@ -96,6 +106,9 @@
     -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
     border:1px solid rgba(255,255,255,.2);border-radius:999px;text-align:center}
   #warn code{background:rgba(255,255,255,.16);padding:1px 4px;font-size:10px;border-radius:3px}
+  /* the muted-autoplay nudge is not an error, so it does not wear the error red */
+  #warn.hush{color:#FFEAC2;background:rgba(26,19,12,.62);
+    border-color:rgba(255,222,160,.34);cursor:pointer}
 
   /* glass, shared by the horn, the map and the route picker */
   .glass{background:rgba(22,16,26,.42);
@@ -104,8 +117,9 @@
     border:1px solid rgba(255,255,255,.2);
     box-shadow:0 8px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.25)}
 
-  /* horn — right edge, vertically centred */
-  #horn{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:6;
+  /* horn — right edge, vertically centred. Centred by margin, not by transform,
+     so the hover and honk animations are free to use transform on their own. */
+  #horn{position:fixed;right:18px;top:50%;margin-top:-34px;z-index:6;
     width:68px;height:68px;border-radius:50%;display:grid;place-items:center;
     color:rgba(255,255,255,.9);transition:transform .12s,color .15s}
   #horn:hover{color:#fff}
@@ -178,31 +192,111 @@
   #tapeSel .btn{color:#fff;background:rgba(255,255,255,.12)}
   #tapeSel .btn:hover{background:rgba(255,255,255,.22)}
   #tapeSel .opt[aria-selected="true"]{color:var(--marigold)}
-  #horn:hover{transform:translateY(-50%) scale(1.07)}
+  #horn:hover{transform:scale(1.07)}
   #horn.honk{animation:honk .42s ease-out}       /* two pulses, one per pop */
-  @keyframes honk{0%{transform:translateY(-50%) scale(.93)}
-    16%{transform:translateY(-50%) scale(1.14)}
-    40%{transform:translateY(-50%) scale(.97)}
-    58%{transform:translateY(-50%) scale(1.12)}
-    100%{transform:translateY(-50%) scale(1)}}
+  @keyframes honk{0%{transform:scale(.93)} 16%{transform:scale(1.14)}
+    40%{transform:scale(.97)} 58%{transform:scale(1.12)} 100%{transform:scale(1)}}
+
+  /* sun / moon — the sky switch, parked under the horn on the same edge */
+  #sky{position:fixed;right:26px;top:50%;margin-top:44px;z-index:6;
+    width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
+    color:rgba(255,255,255,.88);transition:transform .12s,color .15s}
+  #sky:hover{color:#fff;transform:scale(1.07)}
+  #sky svg{width:25px;height:25px;display:block;fill:currentColor;
+    filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
+  #sky .rays{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  #sky .moon{display:none}
+  body.night #sky{color:#F6E7B4}
+  body.night #sky .sun{display:none}
+  body.night #sky .moon{display:block}
+  /* the icon swings in when it changes, so the switch reads as a switch */
+  #sky.flip svg{animation:skyflip .45s cubic-bezier(.3,1.4,.5,1)}
+  @keyframes skyflip{from{transform:rotate(-150deg) scale(.5);opacity:0}to{transform:none;opacity:1}}
+  @media (prefers-reduced-motion:reduce){#sky.flip svg{animation:none}}
 
   #hint{position:fixed;left:0;right:0;top:15px;text-align:center;z-index:5;font-size:10px;
     letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.6)}
-  @media (max-width:900px){ #map{width:124px;height:124px;left:12px;bottom:96px}
-    #legend{display:none} }
-  @media (max-width:540px){ #hint{display:none}
-    #horn{width:56px;height:56px;right:10px} #horn svg{width:31px;height:31px}
-    #map{display:none} #route{right:10px;top:10px;padding:5px 7px 5px 10px;gap:6px}
+  /* the keyboard hint is centred across the full width, so it runs under the
+     masthead and the route pill long before the window gets properly narrow */
+  @media (max-width:1200px){ #hint{display:none} }
+
+  /* ---------- narrower windows: the legend goes, the radar shrinks ---------- */
+  @media (max-width:900px){
+    #map{width:124px;height:124px;left:12px;bottom:calc(96px + env(safe-area-inset-bottom))}
+    #legend{display:none}
+  }
+
+  /* ---------- phones. Almost the whole screen is scene, so every control
+       tucks into a corner and nothing is allowed to sit over the micro. ---------- */
+  @media (max-width:560px){
+    #hint{display:none}
+    #mast{left:calc(12px + env(safe-area-inset-left));top:calc(10px + env(safe-area-inset-top))}
+    #mast .np{font-size:31px}
+    #mast .en{margin-top:5px;font-size:9px;letter-spacing:.2em}
+    #route{right:calc(10px + env(safe-area-inset-right));top:calc(10px + env(safe-area-inset-top));
+      padding:5px 7px 5px 10px;gap:6px;
+      max-width:calc(100% - 150px)}                 /* never crowd the masthead */
     #route .from,#route .arrow{display:none}
-    #mast{left:12px;top:12px} #mast .en{letter-spacing:.22em} }
-  @media (max-width:400px){ #disc{width:44px;height:44px;flex-basis:44px}
-    #spindle{width:9px;height:9px;margin:-4.5px 0 0 -4.5px} }
+    .sel{min-width:0}
+    .sel .btn{min-width:0;font-size:10px;letter-spacing:.06em;padding:7px 9px 7px 11px}
+    .sel .btn .val{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sel .menu{min-width:150px}
+    #board{bottom:calc(12px + env(safe-area-inset-bottom));
+      width:min(560px,calc(100vw - 16px))}
+    /* horn and radar flank the player, clear of the road up the middle */
+    /* --boardH is measured from the player itself, so these clear it whatever
+       the layout does to its height */
+    #horn{top:auto;margin-top:0;width:52px;height:52px;
+      right:calc(12px + env(safe-area-inset-right));
+      bottom:calc(var(--boardH,92px) + 24px + env(safe-area-inset-bottom))}
+    #horn svg{width:29px;height:29px}
+    /* the sky switch stacks straight above the horn */
+    #sky{top:auto;margin-top:0;width:44px;height:44px;
+      right:calc(16px + env(safe-area-inset-right));
+      bottom:calc(var(--boardH,92px) + 86px + env(safe-area-inset-bottom))}
+    #sky svg{width:22px;height:22px}
+    #map{display:block;width:92px;height:92px;
+      left:calc(12px + env(safe-area-inset-left));
+      bottom:calc(var(--boardH,92px) + 20px + env(safe-area-inset-bottom))}
+    /* fingers are blunter than a mouse: give the controls more to aim at */
+    #bar::before{top:-14px;bottom:-14px}
+    .icon{width:38px;height:38px} .icon svg{width:17px;height:17px}
+    #play{width:46px;height:46px} #play svg{width:18px;height:18px}
+    .sel .opt{padding:11px 12px;font-size:12.5px}
+  }
+  @media (max-width:400px){
+    #disc{width:44px;height:44px;flex-basis:44px}
+    #spindle{width:9px;height:9px;margin:-4.5px 0 0 -4.5px}
+    .plate{padding:8px 15px 8px 8px;gap:11px}
+    h1{font-size:14px} .credit{font-size:11px}
+    #map{width:82px;height:82px}
+    #mast .np{font-size:27px}
+  }
+
+  /* ---------- landscape phones: short, so keep the middle band clear ---------- */
+  @media (max-height:470px) and (orientation:landscape){
+    #hint{display:none}
+    #legend{display:none}
+    #mast{top:calc(10px + env(safe-area-inset-top))}
+    #mast .np{font-size:30px} #mast .en{display:none}
+    #route{top:calc(10px + env(safe-area-inset-top))}
+    #horn{width:50px;height:50px;margin-top:-25px;
+      right:calc(12px + env(safe-area-inset-right))}
+    #horn svg{width:28px;height:28px}
+    #sky{width:42px;height:42px;margin-top:33px;
+      right:calc(16px + env(safe-area-inset-right))}
+    #sky svg{width:21px;height:21px}
+    #board{bottom:calc(8px + env(safe-area-inset-bottom));
+      width:min(460px,calc(100vw - 190px))}
+    #map{width:88px;height:88px;left:calc(10px + env(safe-area-inset-left));
+      bottom:calc(10px + env(safe-area-inset-bottom))}
+  }
 </style>
 </head>
 <body>
 <canvas id="scene"></canvas>
 <div id="veil"></div>
-<div id="hint">← → change song · space play · H horn · drag the bar to seek</div>
+<div id="hint">← → change song · space play · H horn · N night · drag the bar to seek</div>
 
 <div id="route" class="glass">
   <span class="from">Kathmandu</span><span class="arrow">→</span>
@@ -221,6 +315,7 @@
   <span><i style="background:#3FBF6E"></i>Chiya pasal</span>
   <span><i style="background:#F0A21C"></i>Thakali khana</span>
   <span><i style="background:#5FA8F0"></i>Sauchalaya</span>
+  <span><i style="background:#E4DCC8"></i>Pul · khola</span>
   <span><i style="background:#B9B2A6"></i>Potholes</span>
   <span><i class="you"></i>You</span>
 </div>
@@ -232,6 +327,18 @@
     <path d="M4.6 2.2Q1.4 15 4.6 27.8L20.4 19.6V10.4z"/>
     <path d="M20.4 10.8h5.4a4.2 4.2 0 0 1 0 8.4h-5.4z"/>
     <circle cx="33.4" cy="15" r="6.6"/>
+  </svg>
+</button>
+
+<button id="sky" class="glass" aria-label="Switch to night" aria-pressed="false" title="Night (N)">
+  <svg class="sun" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.5"/>
+    <g class="rays"><path d="M12 1.7v2.5M12 19.8v2.5M22.3 12h-2.5M4.2 12H1.7
+      M19.3 4.7l-1.8 1.8M6.5 17.5l-1.8 1.8M19.3 19.3l-1.8-1.8M6.5 6.5L4.7 4.7"/></g>
+  </svg>
+  <!-- crescent: one disc with a second bitten out of it -->
+  <svg class="moon" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M21.2 14.6A9 9 0 0 1 9.4 2.8 9.2 9.2 0 1 0 21.2 14.6z"/>
   </svg>
 </button>
 
@@ -289,11 +396,31 @@
 const $=id=>document.getElementById(id);
 
 /* Route is picked before the scene builds — the micro's rear board paints it. */
-const DESTS=['Birtamode','Jhapa','Pokhara','Dhangadhi','Ilam','Palpa','Butwal','Dharan','Surkhet'];
+/* Everything the BP Highway actually reaches once it is over Sindhuli Gadhi —
+   the road drops out of the hills at Bardibas and runs east along the Terai. */
+const DESTS=['Sindhuli','Bardibas','Janakpur','Lahan','Rajbiraj','Itahari',
+             'Dharan','Biratnagar','Birtamode','Damak','Ilam'];
 const pickDest=()=>DESTS[(Math.random()*DESTS.length)|0];
 let DEST=pickDest();
 let redrawBand=null;                 /* assigned by the scene once the micro exists */
-let driving=false;                   /* music playing == micro rolling; paused == tea break */
+let repaintPoles=null;               /* likewise, for the roadside distance boards */
+/* Music playing == micro rolling; paused == tea break. It starts true so the
+   scene is already moving while the tape loads, rather than opening on a
+   stationary picture waiting for YouTube. */
+let driving=true;
+
+/* Day or dark. The button only sets the target — the scene eases the whole sky,
+   the lights and the signs across, so the switch is a dusk rather than a jump. */
+let night=false;
+let applyNight=null;                 /* assigned by the scene */
+
+/* Roughly how far each place is from Kathmandu by road, for the distance poles.
+   The BP Highway comes down out of the hills at Bardibas and runs east. */
+const DEST_KM={Sindhuli:130,Bardibas:190,Janakpur:225,Lahan:270,Rajbiraj:320,
+               Itahari:385,Dharan:400,Biratnagar:405,Damak:450,Birtamode:475,Ilam:545};
+const DEST_NP={Sindhuli:'सिन्धुली',Bardibas:'बर्दिबास',Janakpur:'जनकपुर',
+               Lahan:'लहान',Rajbiraj:'राजविराज',Itahari:'इटहरी',Dharan:'धरान',
+               Biratnagar:'विराटनगर',Damak:'दमक',Birtamode:'बिर्तामोड',Ilam:'इलाम'};
 
 /* ---- what sits along the loop. Shared: the 3D scene builds these, and the
    banner border plots them, so the sticker passes each one where it should. ---- */
@@ -303,21 +430,36 @@ const THAKALI_US=[0.365,0.83];       /* dal bhat stops */
 const SAUCH_US=[0.198,0.528,0.842];  /* one mid-route, one at each khana ghar */
 const POTHOLE_US=[0.442,0.452,0.463,0.474];
 const CROSS_US=[0.22,0.72];          /* where children cross */
+const BRIDGE_U=0.312;                /* the khola crosses here, and the pul carries us over */
 const POIS=[
   ...PASAL_US.map(u=>({u,kind:'chiya',label:'Chiya pasal'})),
   ...THAKALI_US.map(u=>({u,kind:'thakali',label:'Thakali khana ghar'})),
   ...SAUCH_US.map(u=>({u,kind:'sauch',label:'Sauchalaya'})),
+  {u:BRIDGE_U,kind:'bridge',label:'Pul — the river bridge'},
   {u:POTHOLE_US[0],kind:'hole',label:'Potholes — mind the bump'}
 ];
 /* the scene reports where the micro actually is; the sticker and radar follow it */
 let routeU=PASAL_US[0],routeMoving=false,hasScene=false;
-let mapRoute=[],mapPois=[];                 /* loop outline and stops, in world x/z */
+let mapRoute=[],mapPois=[],mapRiver=[];     /* loop, stops and the khola, in world x/z */
 const mapCar={x:0,z:0,a:0};                 /* our position and heading */
 function setDest(d){
   DEST=d;
   const el=$('dest');
   if(el&&el.value!==d) el.value=d;
   if(redrawBand)redrawBand();          /* repaint the micro's rear board */
+  if(repaintPoles)repaintPoles();      /* and every distance board on the road */
+}
+function setNight(on){
+  night=!!on;
+  document.body.classList.toggle('night',night);
+  const b=$('sky');
+  if(b){
+    b.setAttribute('aria-pressed',night?'true':'false');
+    b.setAttribute('aria-label',night?'Switch to day':'Switch to night');
+    b.title=(night?'Day':'Night')+' (N)';
+    b.classList.remove('flip');void b.offsetWidth;b.classList.add('flip');
+  }
+  if(applyNight)applyNight(night);
 }
 
 if(typeof THREE==='undefined'){
@@ -332,17 +474,62 @@ if(typeof THREE==='undefined'){
 if(typeof THREE!=='undefined'){(function(){
 const canvas=$('scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
+/* A phone runs this on a fraction of a laptop's GPU. Build it a lighter scene
+   and render fewer pixels, rather than let it drop frames all the way home. */
+const LOW=innerWidth<720||innerHeight<520;
+renderer.setPixelRatio(Math.min(devicePixelRatio,LOW?1.25:1.6));
 const scene=new THREE.Scene();
-scene.fog=new THREE.Fog(0xD8875A,90,880);
+/* Evening haze in the hills is warm but thin — hold it back far enough that the
+   green still reads, and let the ridge bands carry the distance instead. */
+scene.fog=new THREE.Fog(0xCE9A72,150,1150);
 const camera=new THREE.PerspectiveCamera(56,1,0.5,2400);
-function resize(){renderer.setSize(innerWidth,innerHeight,false);
-  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
-addEventListener('resize',resize);resize();
+/* How tall and narrow the window is: 0 for a laptop, 1 for a phone held upright.
+   A portrait frame shows a far narrower slice of the world at the same lens, so
+   the frame loop opens it up and aims higher — otherwise the micro sits off in a
+   corner with half the screen taken up by empty tarmac. */
+let portrait=0;
+function resize(){
+  renderer.setSize(innerWidth,innerHeight,false);
+  const a=innerWidth/innerHeight;
+  camera.aspect=a;
+  portrait=Math.max(0,Math.min(1,(1.3-a)/0.8));
+  camera.updateProjectionMatrix();}
+addEventListener('resize',resize);
+addEventListener('orientationchange',()=>setTimeout(resize,120));
+resize();
 
-scene.add(new THREE.HemisphereLight(0xA8C0E4,0x4E4026,0.78));
-const sun=new THREE.DirectionalLight(0xFFC079,1.2);sun.position.set(-620,140,-420);scene.add(sun);
+const hemi=new THREE.HemisphereLight(0xB6CBEA,0x5A5230,0.9);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xFFC98A,1.3);sun.position.set(-620,140,-420);scene.add(sun);
 const rim=new THREE.DirectionalLight(0x7E97CC,0.42);rim.position.set(400,220,380);scene.add(rim);
+
+/* ============================================================
+   DAY / NIGHT — one dial, `nightT`, that everything hangs off.
+   Lit materials follow the lights on their own. Everything unlit has to be
+   told, so it registers here as it is built:
+     dimAtNight   flat colour that would otherwise blaze after dark
+     lampAtNight  a lamp, dull in daylight and burning at night
+     glowAtNight  an additive beam or halo, absent by day
+     swapAtNight  a painted sign that has a second, digital face
+   ============================================================ */
+const dimList=[],lampList=[],glowList=[],swapList=[];
+function dimAtNight(mat,f){dimList.push({mat,base:mat.color.clone(),f});return mat;}
+function lampAtNight(mat,dayHex,nightHex){
+  lampList.push({mat,day:new THREE.Color(dayHex),night:new THREE.Color(nightHex)});return mat;}
+function glowAtNight(obj,max){
+  obj.visible=false;obj.material.opacity=0;glowList.push({obj,max});return obj;}
+function swapAtNight(mat,dayTex,nightTex){swapList.push({mat,day:dayTex,night:nightTex});return mat;}
+
+let nightWant=0,nightT=0,nightAt=-1,nightPhase=false;
+applyNight=on=>{nightWant=on?1:0;};
+
+const FOG_D=new THREE.Color(0xCE9A72),FOG_N=new THREE.Color(0x070C1A),
+      HEMI_SD=new THREE.Color(0xB6CBEA),HEMI_SN=new THREE.Color(0x1E2A4A),
+      HEMI_GD=new THREE.Color(0x5A5230),HEMI_GN=new THREE.Color(0x10121C),
+      SUN_D=new THREE.Color(0xFFC98A),SUN_N=new THREE.Color(0x93AEE4),
+      RIM_D=new THREE.Color(0x7E97CC),RIM_N=new THREE.Color(0x4C61A0),
+      NIGHT_INK=new THREE.Color(0x080E1E);
+const SUN_POS=sun.position.clone(),MOON_POS=new THREE.Vector3(660,300,-520);
+const skyBands=[];                   /* the ridge bands: unlit, so hand-faded */
 
 function hash(x,y){const s=Math.sin(x*127.1+y*311.7)*43758.5453;return s-Math.floor(s);}
 function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
@@ -352,34 +539,73 @@ function fbm(x,y){let a=0,amp=1,f=1,n=0;
   for(let i=0;i<5;i++){a+=vnoise(x*f,y*f)*amp;n+=amp;amp*=0.5;f*=2.05;}return a/n;}
 const sstep=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 
+/* The BP Highway at Sindhuli Gadhi does not go anywhere in a straight line: it
+   winds along the ridges and doubles back on itself climbing them. Extra
+   harmonics on the radius give those bends, and a bigger swing in height gives
+   the climbs and drops between them. */
 const CP=[];
-for(let i=0;i<26;i++){const a=i/26*Math.PI*2;const r=270+Math.sin(a*3)*78+Math.cos(a*5)*44;
-  CP.push(new THREE.Vector3(Math.cos(a)*r,5+Math.sin(a*2)*13+Math.cos(a*3.7)*7,Math.sin(a)*r));}
+for(let i=0;i<34;i++){const a=i/34*Math.PI*2;
+  const r=268+Math.sin(a*3)*88+Math.cos(a*5)*50+Math.sin(a*7+0.6)*24;
+  CP.push(new THREE.Vector3(Math.cos(a)*r,
+    8+Math.sin(a*2)*20+Math.cos(a*3.7)*11+Math.sin(a*5.3+1.1)*6,Math.sin(a)*r));}
 const curve=new THREE.CatmullRomCurve3(CP,true,'catmullrom',0.5);
-const RS=[];for(let i=0;i<240;i++)RS.push(curve.getPointAt(i/240));
+const RS=[];for(let i=0;i<300;i++)RS.push(curve.getPointAt(i/300));
 function nearRoad(x,z){let md=1e9,ny=0;
   for(let i=0;i<RS.length;i++){const dx=RS[i].x-x,dz=RS[i].z-z,d=dx*dx+dz*dz;
     if(d<md){md=d;ny=RS[i].y;}}
   return {d:Math.sqrt(md),y:ny};}
+/* ---- THE KHOLA — a river cutting straight across the road at BRIDGE_U.
+   It is carved into the terrain itself, road corridor included: that gorge is
+   what the bridge spans, so the two have to agree on where the ground is. ---- */
+const BR_P=curve.getPointAt(BRIDGE_U);
+const BR_T=curve.getTangentAt(BRIDGE_U).setY(0).normalize();   /* along the road */
+const BR_A=new THREE.Vector3(-BR_T.z,0,BR_T.x);                /* along the river */
+const WATER_Y=BR_P.y-10.5;
+const RIV_W=14,RIV_BANK=30,RIV_RUN=230;
+/* a: how far down the river. b: how far across it — measured up the road, so the
+   gorge opens exactly RIV_BANK either side of the crossing and the deck can span it. */
+function riverFrame(x,z){
+  const dx=x-BR_P.x,dz=z-BR_P.z;
+  const a=dx*BR_A.x+dz*BR_A.z;
+  /* it meanders, but both terms vanish at a=0 so it passes dead under the bridge */
+  return {a,b:dx*BR_T.x+dz*BR_T.z-(Math.sin(a*0.0115)*14+Math.sin(a*0.026)*6)};
+}
+function riverMask(x,z){               /* 1 mid-channel, 0 past the banks and the run */
+  const f=riverFrame(x,z);
+  return (1-sstep(RIV_W,RIV_BANK,Math.abs(f.b)))*(1-sstep(RIV_RUN*0.74,RIV_RUN,Math.abs(f.a)));
+}
 function terrainY(x,z){
   const n=nearRoad(x,z),rad=Math.hypot(x,z);
-  let h=fbm(x*0.0032+40,z*0.0032+40)*66+fbm(x*0.011,z*0.011)*13+Math.max(0,rad-360)*0.30;
-  if(fbm(x*0.0055+9,z*0.0055+9)>0.46&&h<52) h=Math.round(h/2.4)*2.4;
+  /* the outer bowl is kept low so the ridge bands behind it stay in view */
+  let h=fbm(x*0.0032+40,z*0.0032+40)*66+fbm(x*0.011,z*0.011)*13+Math.max(0,rad-360)*0.20;
+  /* the terraces: rice fields cut the hillside into steps all the way up */
+  if(fbm(x*0.0055+9,z*0.0055+9)>0.44&&h<58) h=Math.round(h/2.05)*2.05;
   const k=sstep(11,52,n.d);
-  return (n.y-0.55)*(1-k)+h*k;}
+  const y=(n.y-0.55)*(1-k)+h*k;
+  const m=riverMask(x,z);
+  if(m<=0) return y;
+  const f=riverFrame(x,z);             /* deepest mid-stream, shelving up to the banks */
+  return y*(1-m)+(WATER_Y-1.5-Math.max(0,RIV_W-Math.abs(f.b))*0.17)*m;}
 
-const SEG=168,SPAN=1250;
+const SEG=LOW?132:168,SPAN=1250;
 const tg=new THREE.PlaneGeometry(SPAN,SPAN,SEG,SEG);tg.rotateX(-Math.PI/2);
 const tp=tg.attributes.position,cols=[];
-const cLow=new THREE.Color(0x646F32),cField=new THREE.Color(0xB39231),
-      cMid=new THREE.Color(0x45542A),cRock=new THREE.Color(0x5E5040),cSnow=new THREE.Color(0xCFCCC2);
+/* Sindhuli in Dashain: wet-green valleys, ripe gold on the terraces, and sal
+   forest closing over the ridges — these hills are wooded to the top, so there
+   is no bare rock and certainly no snow at this height. */
+const cLow=new THREE.Color(0x63914A),cField=new THREE.Color(0xC7A94E),
+      cMid=new THREE.Color(0x466E37),cRock=new THREE.Color(0x5A7047),
+      cHaze=new THREE.Color(0x8D9A80);
 for(let i=0;i<tp.count;i++){
   const x=tp.getX(i),z=tp.getZ(i),y=terrainY(x,z);tp.setY(i,y);
   const c=new THREE.Color();
   if(y<16) c.copy(cLow).lerp(cField,fbm(x*0.006+3,z*0.006+3));
   else if(y<44) c.copy(cLow).lerp(cMid,sstep(16,44,y));
   else if(y<78) c.copy(cMid).lerp(cRock,sstep(44,78,y));
-  else c.copy(cRock).lerp(cSnow,sstep(78,120,y));
+  else c.copy(cRock).lerp(cHaze,sstep(78,150,y));
+  /* the terraced ground reads gold — the same test that cut the steps in */
+  if(y<58&&fbm(x*0.0055+9,z*0.0055+9)>0.44)
+    c.lerp(cField,0.22+0.34*fbm(x*0.02+21,z*0.02+21));
   const sh=0.84+fbm(x*0.05,z*0.05)*0.3;
   cols.push(c.r*sh,c.g*sh,c.b*sh);
 }
@@ -404,7 +630,7 @@ scene.add(ribbon(6.6,0.02,new THREE.MeshLambertMaterial({color:0x554E40})));
 scene.add(ribbon(4.9,0.10,new THREE.MeshLambertMaterial({color:0x28241F})));
 {
   const dashes=new THREE.InstancedMesh(new THREE.BoxGeometry(0.34,0.04,3.2),
-    new THREE.MeshBasicMaterial({color:0xCFB682}),150);
+    dimAtNight(new THREE.MeshBasicMaterial({color:0xCFB682}),0.34),150);
   const m=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3(1,1,1),up=new THREE.Vector3(0,1,0);
   for(let i=0;i<150;i++){
     const p=curve.getPointAt(i/150),tan=curve.getTangentAt(i/150);
@@ -414,44 +640,71 @@ scene.add(ribbon(4.9,0.10,new THREE.MeshLambertMaterial({color:0x28241F})));
   scene.add(dashes);
 }
 
-const TN=760;
-const trunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(0.28,0.4,2.6,5),
-  new THREE.MeshLambertMaterial({color:0x40301F}),TN);
-const leaves=new THREE.InstancedMesh(new THREE.ConeGeometry(2.5,8.5,6),
-  new THREE.MeshPhongMaterial({color:0x2C4423,flatShading:true,shininess:0}),TN);
+const TN=LOW?420:760;
+const NHOUSE=LOW?24:46,NBULB=LOW?5:9;
+/* These ridges are sal forest — broadleaf, round-crowned, and never the same
+   green twice. A cone reads as pine, which is the one thing that does not grow
+   down here, so a tree is now a trunk under two stacked low-poly crowns, tinted
+   per instance. Only the high ground keeps a few conifers. */
+const trunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2,0.44,3.4,5),
+  new THREE.MeshLambertMaterial({color:0x4A3623}),TN);
+const crownGeo=new THREE.IcosahedronGeometry(2.35,0);crownGeo.scale(1,0.84,1);
+const capGeo=new THREE.IcosahedronGeometry(1.5,0);capGeo.scale(1,0.9,1);
+/* white, because the instance tint does the colouring */
+const leafMat=new THREE.MeshPhongMaterial({color:0xffffff,flatShading:true,shininess:0});
+const crowns=new THREE.InstancedMesh(crownGeo,leafMat,TN);
+const caps=new THREE.InstancedMesh(capGeo,leafMat,TN);
+const pines=new THREE.InstancedMesh(new THREE.ConeGeometry(1.85,7.2,7),
+  new THREE.MeshPhongMaterial({color:0x22401D,flatShading:true,shininess:0}),TN);
 const houseW=new THREE.InstancedMesh(new THREE.BoxGeometry(5.4,3.6,6.2),
-  new THREE.MeshPhongMaterial({color:0xC0A070,flatShading:true,shininess:0}),46);
+  new THREE.MeshPhongMaterial({color:0xC0A070,flatShading:true,shininess:0}),NHOUSE);
 const houseR=new THREE.InstancedMesh(new THREE.ConeGeometry(5.1,2.5,4),
-  new THREE.MeshPhongMaterial({color:0x833526,flatShading:true,shininess:0}),46);
+  new THREE.MeshPhongMaterial({color:0x833526,flatShading:true,shininess:0}),NHOUSE);
 const villageLights=[];
 {
   const m=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3();
   const lampGeo=new THREE.SphereGeometry(0.3,6,5);
   const HUES=[0.02,0.11,0.33,0.55,0.86];
-  let ti=0,hi=0,guard=0;
+  const tint=new THREE.Color(),tintUp=new THREE.Color();
+  let ti=0,bi=0,pn=0,hi=0,guard=0;
   while(ti<TN&&guard++<26000){
     const a=Math.random()*Math.PI*2,r=90+Math.random()*470;
     const x=Math.cos(a)*r,z=Math.sin(a)*r,nr=nearRoad(x,z);
     if(nr.d<11) continue;
+    if(riverMask(x,z)>0.3) continue;             /* nothing grows in the riverbed */
     const y=terrainY(x,z);
     if(y>96) continue;
     const sc=0.55+Math.random()*0.85;
     q.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.random()*6.28);
     s.set(sc,sc*(0.8+Math.random()*0.5),sc);
-    trunks.setMatrixAt(ti,m.compose(new THREE.Vector3(x,y+1.3*sc,z),q,s));
-    leaves.setMatrixAt(ti,m.compose(new THREE.Vector3(x,y+2.6+4.2*sc,z),q,s));
+    const th=3.4*s.y;                            /* how tall this trunk came out */
+    trunks.setMatrixAt(ti,m.compose(new THREE.Vector3(x,y+th*0.5,z),q,s));
+    /* conifers thin out the higher you go, and a stray one lower down */
+    if((y>52&&Math.random()<0.7)||Math.random()<0.08){
+      pines.setMatrixAt(pn++,m.compose(new THREE.Vector3(x,y+th*0.72+3.6*s.y,z),q,s));
+    }else{
+      /* the crown sits over the trunk, the cap perches on the crown */
+      crowns.setMatrixAt(bi,m.compose(new THREE.Vector3(x,y+th*0.88+1.2*sc,z),q,s));
+      caps.setMatrixAt(bi,m.compose(
+        new THREE.Vector3(x+(Math.random()-0.5)*0.7*sc,y+th*0.88+2.7*sc,
+                          z+(Math.random()-0.5)*0.7*sc),q,s));
+      tint.setHSL(0.245+Math.random()*0.075,0.30+Math.random()*0.2,0.17+Math.random()*0.11);
+      crowns.setColorAt(bi,tint);
+      caps.setColorAt(bi,tintUp.copy(tint).multiplyScalar(1.18));   /* sun on the top */
+      bi++;
+    }
     ti++;
-    if(hi<46&&nr.d>15&&nr.d<40&&Math.random()<0.06&&y<58){
+    if(hi<NHOUSE&&nr.d>15&&nr.d<40&&Math.random()<0.06&&y<58){
       const hs=0.8+Math.random()*0.5,rot=Math.random()*6.28;
       q.setFromAxisAngle(new THREE.Vector3(0,1,0),rot);s.set(hs,hs,hs);
       houseW.setMatrixAt(hi,m.compose(new THREE.Vector3(x,y+1.8*hs,z),q,s));
       houseR.setMatrixAt(hi,m.compose(new THREE.Vector3(x,y+3.6*hs+1.1,z),q,s));
-      for(let k=0;k<9;k++){
+      for(let k=0;k<NBULB;k++){
         const hue=HUES[k%HUES.length];
         const base=new THREE.Color().setHSL(hue,0.95,0.6);
         const mat=new THREE.MeshBasicMaterial({color:base.clone()});
         const b=new THREE.Mesh(lampGeo,mat);
-        const off=(k/8-0.5)*5.6*hs;
+        const off=(k/(NBULB-1)-0.5)*5.6*hs;
         b.position.set(x+Math.cos(rot)*off,y+3.6*hs+0.25,z+Math.sin(rot)*off);
         b.userData={mat,base,ph:Math.random()*6.28};
         villageLights.push(b);scene.add(b);
@@ -459,29 +712,124 @@ const villageLights=[];
       hi++;
     }
   }
-  trunks.count=ti;leaves.count=ti;houseW.count=hi;houseR.count=hi;
+  trunks.count=ti;crowns.count=bi;caps.count=bi;pines.count=pn;
+  houseW.count=hi;houseR.count=hi;
+  if(crowns.instanceColor)crowns.instanceColor.needsUpdate=true;
+  if(caps.instanceColor)caps.instanceColor.needsUpdate=true;
 }
-scene.add(trunks,leaves,houseW,houseR);
+scene.add(trunks,crowns,caps,pines,houseW,houseR);
 
+/* ---------- THE PAHAD — ridge behind ridge behind ridge, the way the
+   Mahabharat hills stack up and pale out around Sindhuli Gadhi. These carry
+   their own graded colours with the fog switched off: hand-mixing the haze is
+   what gives the aerial perspective its depth, rather than one flat wash. */
 {
-  const pos=[];
-  for(let i=0;i<34;i++){
-    const a=i/34*Math.PI*2+0.1,r=880+Math.random()*180;
-    const cx=Math.cos(a)*r,cz=Math.sin(a)*r,w=140+Math.random()*130,h=190+Math.random()*230;
-    const sx=Math.cos(a+Math.PI/2),sz=Math.sin(a+Math.PI/2);
-    pos.push(cx-sx*w,-40,cz-sz*w, cx+sx*w,-40,cz+sz*w, cx+sx*w*0.1,h,cz+sz*w*0.1);
-  }
-  const g=new THREE.BufferGeometry();
-  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.computeVertexNormals();
-  scene.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xC4B9BE})));
+  const BANDS=[
+    {r:950, h:225, amp:78, k:5.3, col:0x5E6B44},
+    {r:1180,h:288, amp:96, k:4.1, col:0x7A7F5E},
+    {r:1450,h:350, amp:112,k:3.2, col:0x99927E},
+    {r:1750,h:410, amp:126,k:2.4, col:0xB6A79C}
+  ];
+  BANDS.forEach((b,bi)=>{
+    const N=170,pos=[],idx=[];
+    for(let i=0;i<=N;i++){
+      const a=i/N*Math.PI*2;
+      /* a few harmonics, seeded apart per band, make a believable skyline */
+      const j=Math.sin(a*b.k+bi*2.1)*0.5+Math.sin(a*b.k*2.7+bi*1.3)*0.31
+             +Math.sin(a*b.k*5.1+bi*3.7)*0.19;
+      const x=Math.cos(a)*b.r,z=Math.sin(a)*b.r;
+      pos.push(x,-90,z, x,b.h+j*b.amp,z);
+      if(i<N){const o=i*2;idx.push(o,o+1,o+2,o+1,o+3,o+2);}
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    g.setIndex(idx);
+    const mat=new THREE.MeshBasicMaterial({color:b.col,side:THREE.DoubleSide,fog:false});
+    /* after dark the far ridges go to silhouette, the nearest one darkest */
+    skyBands.push({mat,day:new THREE.Color(b.col),
+      night:new THREE.Color(b.col).lerp(NIGHT_INK,0.9-bi*0.05)});
+    scene.add(new THREE.Mesh(g,mat));
+  });
 }
 
 function tex(draw,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;
   draw(c.getContext('2d'),w,h);return new THREE.CanvasTexture(c);}
 
+/* ---------- HEADLAMPS. No extra lights: a spot light per vehicle would
+   recompile every shader in the scene and cost a phone its frame rate. A glow
+   sprite, a beam that fades down its length and a pool of light on the tarmac
+   sell it for nothing, and they all fade in with nightT. ---------- */
+const glowTex=tex((c,w,h)=>{
+  const g=c.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);
+  g.addColorStop(0,'rgba(255,252,236,1)');g.addColorStop(.28,'rgba(255,240,196,.72)');
+  g.addColorStop(.62,'rgba(255,214,140,.22)');g.addColorStop(1,'rgba(255,200,120,0)');
+  c.fillStyle=g;c.fillRect(0,0,w,h);},128,128);
+/* the cone's apex is at v=1, which is the top of this canvas: brightest at the
+   lamp, gone by the time it reaches the road */
+const beamTex=tex((c,w,h)=>{
+  const g=c.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'rgba(255,246,212,.9)');g.addColorStop(.3,'rgba(255,240,196,.4)');
+  g.addColorStop(.72,'rgba(255,232,176,.12)');g.addColorStop(1,'rgba(255,226,164,0)');
+  c.fillStyle=g;c.fillRect(0,0,w,h);},32,128);
+const ADD=(map,col)=>new THREE.MeshBasicMaterial({map,color:col,transparent:true,
+  opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
+function lampGlow(size,max,col){
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:col||0xFFF3D2,
+    transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+  s.scale.set(size,size,1);return glowAtNight(s,max);
+}
+/* ---------- The digital face of a roadside board. Every pasal that can afford
+   an inverter has swapped its painted tin for an LED panel, and they are all
+   too bright for the size of the shop. Same canvas size as the day board, so
+   the two textures are interchangeable on the same mesh. ---------- */
+function ledBoard(w,h,accent,lines){
+  return tex((c,W,H)=>{
+    c.fillStyle='#04060B';c.fillRect(0,0,W,H);
+    c.strokeStyle='#161E2B';c.lineWidth=11;c.strokeRect(5,5,W-10,H-10);
+    c.globalAlpha=0.6;c.strokeStyle=accent;c.lineWidth=3;
+    c.strokeRect(14,14,W-28,H-28);c.globalAlpha=1;
+    c.textAlign='center';c.textBaseline='middle';
+    for(const L of lines){
+      c.font='bold '+L.size+'px sans-serif';
+      c.shadowColor=L.col;c.shadowBlur=L.size*0.6;
+      c.fillStyle=L.col;c.fillText(L.t,W/2,H*L.y);
+      c.fillText(L.t,W/2,H*L.y);                    /* twice, for the bloom */
+      c.shadowBlur=L.size*0.22;c.globalAlpha=0.6;c.fillStyle='#FFFFFF';
+      c.fillText(L.t,W/2,H*L.y);                    /* a white core in the colour */
+      c.globalAlpha=1;c.shadowBlur=0;
+    }
+    /* the dot pitch of a cheap panel */
+    c.globalCompositeOperation='destination-out';
+    c.fillStyle='rgba(0,0,0,.26)';
+    for(let y=0;y<H;y+=3) c.fillRect(0,y,W,1);
+    c.globalCompositeOperation='source-over';
+  },w,h);
+}
+/* the wash an LED board throws on the air in front of it */
+function signHalo(w,h,max,col){
+  const p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),ADD(glowTex,col||0xBFF0D0));
+  return glowAtNight(p,max);
+}
+
+/* a cone from the lamp, pointing -Z the way the vehicle faces */
+function lampBeam(len,rad,max,col){
+  const g=new THREE.Mesh(new THREE.ConeGeometry(rad,len,10,1,true),
+    ADD(beamTex,col||0xFFEFC6));
+  g.material.side=THREE.DoubleSide;
+  g.rotation.x=-Math.PI/2;g.position.z=-len/2;
+  return glowAtNight(g,max);
+}
+/* the puddle the beams throw on the road ahead */
+function lampPool(w,l,ahead,max){
+  const p=new THREE.Mesh(new THREE.PlaneGeometry(w,l),ADD(glowTex,0xFFE9BE));
+  p.rotation.x=-Math.PI/2;p.position.set(0,0.06,-ahead);
+  return glowAtNight(p,max);
+}
+
 /* ---------- THE MICRO — Hiace high-roof proportions ---------- */
 const micro=new THREE.Group();
 const microLights=[];
+let microDoor=null;                    /* the sliding door, opened by the frame loop */
 {
   const M=(c)=>new THREE.MeshPhongMaterial({color:c,flatShading:true,shininess:0});
   const white=M(0xF2EFE7), glass=M(0x18222E), dark=M(0x1F1D1A), grey=M(0x8C8880), chrome=M(0xB6B2A8);
@@ -497,6 +845,7 @@ const microLights=[];
   const wind=new THREE.Mesh(new THREE.BoxGeometry(3.0,1.16,0.16),glass);
   wind.position.set(0,3.2,-3.46);wind.rotation.x=-0.12;micro.add(wind);
   for(const sx of [-1,1]) for(let i=0;i<3;i++){
+    if(sx<0&&i===1) continue;              /* that bay belongs to the sliding door */
     const w=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.94,1.86),glass);
     w.position.set(sx*1.60,3.2,-2.0+i*2.0);micro.add(w);
   }
@@ -517,8 +866,10 @@ const microLights=[];
     bandTex.needsUpdate=true;
   };
   redrawBand();
+  /* the board keeps most of its brightness after dark — it has its own strip
+     light, the way every long-route board does */
   const band=new THREE.Mesh(new THREE.PlaneGeometry(2.72,0.46),
-    new THREE.MeshBasicMaterial({map:bandTex}));
+    dimAtNight(new THREE.MeshBasicMaterial({map:bandTex}),0.88));
   band.position.set(0,3.24,3.55);micro.add(band);
 
   const seam=new THREE.Mesh(new THREE.BoxGeometry(2.9,1.5,0.06),M(0xE4E0D6));
@@ -529,7 +880,7 @@ const microLights=[];
     c.fillStyle='#F4FBF5';c.font='bold 44px monospace';c.textAlign='center';
     c.fillText('BA 2 KHA',w/2,h/2+16);},256,96);
   const plate=new THREE.Mesh(new THREE.PlaneGeometry(1.24,0.46),
-    new THREE.MeshBasicMaterial({map:plateTex}));
+    dimAtNight(new THREE.MeshBasicMaterial({map:plateTex}),0.62));
   plate.position.set(-0.5,1.34,3.83);micro.add(plate);
 
   for(const z of [-4.62,3.92]){
@@ -538,14 +889,19 @@ const microLights=[];
   }
   for(const sx of [-1,1]){
     const hl=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.36,0.14),
-      new THREE.MeshBasicMaterial({color:0xFFF2CC}));
+      lampAtNight(new THREE.MeshBasicMaterial({color:0xFFF2CC}),0xE8DCB4,0xFFFDF2));
     hl.position.set(sx*1.06,1.62,-4.50);micro.add(hl);
+    /* the lamp burning, and what it throws down the road */
+    const gl=lampGlow(2.2,0.95);gl.position.set(sx*1.06,1.62,-4.62);micro.add(gl);
+    const bm=lampBeam(17,2.5,0.5);bm.position.set(sx*1.02,1.6,-4.6);micro.add(bm);
     const tl=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.86,0.12),
-      new THREE.MeshBasicMaterial({color:0xD8382A}));
+      lampAtNight(new THREE.MeshBasicMaterial({color:0xD8382A}),0xD8382A,0xFF4A34));
     tl.position.set(sx*1.38,1.72,3.85);micro.add(tl);
+    const tg=lampGlow(1.15,0.7,0xFF3A24);tg.position.set(sx*1.38,1.72,3.95);micro.add(tg);
     const mir=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.3,0.1),dark);
     mir.position.set(sx*1.9,3.0,-3.3);micro.add(mir);
   }
+  micro.add(lampPool(12,34,17,0.66));
 
   for(const sx of [-1,1]) for(const sz of [-2.62,2.42]){
     const w=new THREE.Mesh(new THREE.CylinderGeometry(0.74,0.74,0.46,14),dark);
@@ -578,13 +934,85 @@ const microLights=[];
     b.rotation.y=(Math.random()-0.5)*0.5;micro.add(b);
   }
 
-  for(const sx of [-1.18,-0.72]){
+  /* the ladder sits hard against the near edge, leaving the tailgate free for
+     the slogan every micro on this road carries */
+  for(const sx of [-1.42,-0.98]){
     const r=new THREE.Mesh(new THREE.BoxGeometry(0.07,2.9,0.07),chrome);
     r.position.set(sx,2.62,3.94);micro.add(r);
   }
   for(let i=0;i<7;i++){
     const rung=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.06,0.06),chrome);
-    rung.position.set(-0.95,1.34+i*0.44,3.94);micro.add(rung);
+    rung.position.set(-1.20,1.34+i*0.44,3.94);micro.add(rung);
+  }
+
+  /* The slogan. "Truck sahitya" is a real folk genre — every bus and micro
+     carries one hand-painted by the tail light: a blessing, a social message,
+     or, most of the time, the driver being funny at whoever is stuck behind.
+     It has to sit between the ladder and the near tail light, so it is
+     deliberately a narrow strip. */
+  const SLOGANS=[
+    /* blessings — what the family painted on before the first trip */
+    'देउता हेर्दै छन्','आमाको आशिर्वाद','शुभ यात्रा','जय शम्भो',
+    /* the driver having a laugh at the vehicle behind */
+    'हेर्नु होस्, छुनु होस् न','किन यत्रो हतार ?','नजिक नआउनुस्, माया बस्छ',
+    'हतार छ ? उडेर जानुस्','हर्न बजाए पनि गति उही','म ढिलो, तर पुग्छु',
+    'बाटो बाबुको होइन','ठोक्कियो भने तपाईंकै गल्ती','पछाडि हेर्ने ऐना छैन',
+    'दूरी राख्नुस्, मन मिल्छ','बुहारी खोज्दै','सिट छैन, माया छ',
+    'ब्रेक राम्रो छ, तपाईंको ?','ओभरटेक गर्नु छ ? रक्सी नखानु',
+    /* social message, the earnest kind */
+    'दाइजो हैन, शिक्षा','बाटो छोड्नुस्',
+    /* the English ones, spelled exactly as they are painted */
+    'SEE YOU AGAIN','HORN PLEASE','SLOW DRIVE, LONG LIFE',
+    'ROAD KING','NO TIME FOR LOVE','WAIT FOR SIDE'
+  ];
+  {
+    const words=SLOGANS[(Math.random()*SLOGANS.length)|0];
+    const slogTex=tex((c,w,h)=>{
+      c.clearRect(0,0,w,h);
+      c.textAlign='center';c.textBaseline='middle';
+      const pad=44, font=s=>{c.font='bold '+s+'px sans-serif';};
+      /* Shrink until the line fits the strip both ways. Devanagari matras and
+         the shirorekha make these taller than the font size lets on, so the
+         height has to be measured, not assumed. */
+      const fit=(t,cap,box)=>{let s=cap;font(s);
+        for(;s>26;s-=2,font(s)){
+          const m=c.measureText(t), out=Math.max(3,s*0.13);
+          if(m.width+out<=w-pad &&
+             m.actualBoundingBoxAscent+m.actualBoundingBoxDescent+out<=box)break;
+        }
+        return s;};
+
+      /* One line if it can stay big enough to read from the car behind;
+         otherwise break it at the most even word gap and paint two. */
+      let lines=[words], fs=fit(words,108,h-14);
+      if(fs<58&&/ /.test(words)){
+        const wd=words.split(' ');let best=null;
+        for(let i=1;i<wd.length;i++){
+          const a=wd.slice(0,i).join(' '),b=wd.slice(i).join(' ');
+          font(72);
+          const spread=Math.abs(c.measureText(a).width-c.measureText(b).width);
+          if(!best||spread<best.spread)best={a,b,spread};
+        }
+        lines=[best.a,best.b];
+        fs=Math.min(fit(lines[0],72,h/2-10),fit(lines[1],72,h/2-10));
+      }
+
+      font(fs);
+      c.strokeStyle='#7A1E12';c.lineWidth=Math.max(3,fs*0.13);
+      c.lineJoin='round';
+      const band=h/lines.length;
+      lines.forEach((t,i)=>{
+        const m=c.measureText(t);
+        /* sit on the middle of the ink, not the baseline — that is what keeps
+           a tall word like ठोक्कियो off the top edge of the board */
+        const y=band*i+(band+m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2;
+        c.strokeText(t,w/2,y);
+        c.fillStyle='#F3C518';c.fillText(t,w/2,y);
+      });
+    },1024,168);
+    const slog=new THREE.Mesh(new THREE.PlaneGeometry(1.9,0.31),
+      dimAtNight(new THREE.MeshBasicMaterial({map:slogTex,transparent:true}),0.6));
+    slog.position.set(0.16,1.86,3.845);micro.add(slog);
   }
 
   /* Dashain: tika and rice on the rear door */
@@ -600,7 +1028,7 @@ const microLights=[];
     }
   },128,128);
   const tika=new THREE.Mesh(new THREE.PlaneGeometry(0.78,0.78),
-    new THREE.MeshBasicMaterial({map:tikaTex,transparent:true}));
+    dimAtNight(new THREE.MeshBasicMaterial({map:tikaTex,transparent:true}),0.5));
   tika.position.set(0.72,2.62,3.84);micro.add(tika);
 
   /* Dashain: marigold garland over the grille */
@@ -632,6 +1060,26 @@ const microLights=[];
     b.userData={mat,base,ph:i*0.5};
     microLights.push(b);micro.add(b);
   });
+
+  /* the sliding door. Nepal keeps left, so it is on the kerb side — local −X —
+     and everyone gets down away from the traffic. The frame loop slides it back. */
+  {
+    const bay=new THREE.Mesh(new THREE.BoxGeometry(0.16,2.46,1.98),M(0x0D0B09));
+    bay.position.set(-1.60,2.24,0);micro.add(bay);          /* the hole it uncovers */
+    const sill=new THREE.Mesh(new THREE.BoxGeometry(0.56,0.13,1.6),M(0x6E6A62));
+    sill.position.set(-1.76,0.99,0);micro.add(sill);        /* the step down */
+    const track=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.1,4.2),chrome);
+    track.position.set(-1.68,1.04,1.0);micro.add(track);
+    const d=new THREE.Group();
+    const panel=new THREE.Mesh(new THREE.BoxGeometry(0.13,2.5,2.02),white);
+    panel.position.y=2.24;d.add(panel);
+    const dwin=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.94,1.74),glass);
+    dwin.position.set(-0.02,3.2,0);d.add(dwin);
+    const dh=new THREE.Mesh(new THREE.BoxGeometry(0.11,0.11,0.52),chrome);
+    dh.position.set(-0.09,2.18,-0.74);d.add(dh);
+    d.position.set(-1.70,0,0);micro.add(d);
+    microDoor=d;
+  }
 
   const shade=new THREE.Mesh(new THREE.CircleGeometry(3.1,20),
     new THREE.MeshBasicMaterial({color:0x140F06,transparent:true,opacity:0.32}));
@@ -703,7 +1151,7 @@ function makePerson(shirtCol,scale){
 }
 
 /* ---------- vehicles that share the road (front is -Z, like the hero micro) ---------- */
-function motorbike(col){
+function motorbike(col,lit){
   const g=new THREE.Group();
   const frame=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.42,1.5),MAT(col||0x1B2530));
   frame.position.y=0.82;g.add(frame);
@@ -718,8 +1166,14 @@ function motorbike(col){
   const bars=new THREE.Mesh(new THREE.BoxGeometry(0.86,0.08,0.08),MAT(0x8C8880));
   bars.position.set(0,1.32,-0.62);g.add(bars);
   const lamp=new THREE.Mesh(new THREE.SphereGeometry(0.16,8,7),
-    new THREE.MeshBasicMaterial({color:0xFFF2CC}));
+    lit?lampAtNight(new THREE.MeshBasicMaterial({color:0xFFF2CC}),0xE4D9B6,0xFFFDF4)
+       :new THREE.MeshBasicMaterial({color:0xFFF2CC}));
   lamp.position.set(0,1.16,-0.86);g.add(lamp);
+  if(lit){                               /* parked bikes keep theirs switched off */
+    const gl=lampGlow(2.4,0.9);gl.position.set(0,1.16,-0.96);g.add(gl);
+    const bm=lampBeam(11,1.5,0.4);bm.position.set(0,1.14,-0.96);g.add(bm);
+    g.add(lampPool(4.4,13,8,0.3));
+  }
   /* rider, leaning into it */
   const rider=makePerson(0xB8232E,0.78);
   rider.who.position.set(0,0.62,0.42);
@@ -747,9 +1201,13 @@ function miniMicro(fromCity){
   }
   for(const sx of [-1,1]){
     const hl=new THREE.Mesh(new THREE.BoxGeometry(0.66,0.34,0.12),
-      new THREE.MeshBasicMaterial({color:0xFFF6DA}));
+      lampAtNight(new THREE.MeshBasicMaterial({color:0xFFF6DA}),0xE8DEBE,0xFFFEF6));
     hl.position.set(sx*1.02,1.6,-3.6);g.add(hl);
+    /* these come at us head-on, so the glare is the whole point */
+    const gl=lampGlow(3.4,1,0xFFF6DE);gl.position.set(sx*1.02,1.6,-3.72);g.add(gl);
+    const bm=lampBeam(15,2.3,0.42);bm.position.set(sx*1.0,1.58,-3.7);g.add(bm);
   }
+  g.add(lampPool(8.5,22,13,0.34));
   for(const sx of [-1,1]) for(const sz of [-2.4,2.3]){
     const wh=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.7,0.44,12),dark);
     wh.rotation.z=Math.PI/2;wh.position.set(sx*1.55,0.7,sz);g.add(wh);
@@ -772,7 +1230,7 @@ function miniMicro(fromCity){
     c.fillText(txt,w/2,h/2+2);
   },544,92);
   const board=new THREE.Mesh(new THREE.PlaneGeometry(2.72,0.46),
-    new THREE.MeshBasicMaterial({map:boardTex}));
+    dimAtNight(new THREE.MeshBasicMaterial({map:boardTex}),0.88));
   board.position.set(0,3.78,-3.36);board.rotation.y=Math.PI;g.add(board);
   /* marigold over the grille, because of course */
   const petal=new THREE.SphereGeometry(0.13,7,6);
@@ -796,6 +1254,10 @@ const PASALS=[];
     c.font='bold 54px sans-serif';c.fillText('चिया पसल',w/2,h*0.4);
     c.font='bold 27px sans-serif';c.fillText('CHIYA · KHAJA · MOMO',w/2,h*0.76);
   },384,128);
+  const signNight=ledBoard(384,128,'#3FE07A',[
+    {t:'चिया पसल',size:54,y:0.4,col:'#4CF08A'},
+    {t:'CHIYA · KHAJA · MOMO',size:27,y:0.76,col:'#F5B12E'}
+  ]);
   const packTex=tex((c,w,h)=>{
     const cols=['#E8452F','#F0A21C','#2E7BD4','#C4D66A','#E85C9C','#F2EFE7'];
     for(let i=0;i<6;i++){
@@ -829,8 +1291,10 @@ const PASALS=[];
     sheet.position.set(sgn>0?-3.2:3.2,2.1,0.3);shop.add(sheet);
 
     const sign=new THREE.Mesh(new THREE.PlaneGeometry(4.1,1.05),
-      new THREE.MeshBasicMaterial({map:signTex}));
+      swapAtNight(new THREE.MeshBasicMaterial({map:signTex}),signTex,signNight));
     sign.position.set(0,3.9,2.1);shop.add(sign);
+    const halo=signHalo(7.4,3.4,0.5,0x9CF0C0);
+    halo.position.set(0,3.9,2.16);shop.add(halo);
 
     const bench=new THREE.Mesh(new THREE.BoxGeometry(5,0.18,0.8),counter);
     bench.position.set(0,0.68,2.6);shop.add(bench);
@@ -852,12 +1316,14 @@ const PASALS=[];
 
     /* warm bulb — emissive, not a light: 9 point lights would tax every shader */
     const glow=new THREE.Mesh(new THREE.SphereGeometry(0.2,8,7),
-      new THREE.MeshBasicMaterial({color:0xFFD98A}));
+      lampAtNight(new THREE.MeshBasicMaterial({color:0xFFD98A}),0xE8C880,0xFFF4CE));
     glow.position.set(0,3.1,1.2);shop.add(glow);
+    const bulbHalo=lampGlow(4.6,0.62,0xFFD98A);
+    bulbHalo.position.set(0,3.1,1.3);shop.add(bulbHalo);
 
     /* people on the bench, glass to lip and back down */
     const sippers=[];
-    const howMany=2+((Math.random()*2)|0);
+    const howMany=(LOW?1:2)+((Math.random()*2)|0);
     for(let k=0;k<howMany;k++){
       const pr=makePerson(SHIRTS[(i*3+k)%SHIRTS.length],0.92);
       pr.who.position.set(-1.7+k*1.55,0.1,2.35);
@@ -886,7 +1352,7 @@ const PASALS=[];
        nudged to the shop's side, so both micro and pasal are in frame */
     const camAt=p.clone().addScaledVector(side,sgn*4.5);
     const lookAt=at.clone().addScaledVector(side,-sgn*2.2);
-    PASALS.push({u,pos:at.clone(),camAt,lookAt,sgn,sippers,steam});
+    PASALS.push({u,kind:'chiya',pos:at.clone(),camAt,lookAt,sgn,sippers,steam});
   });
 }
 
@@ -898,8 +1364,13 @@ const PASALS=[];
     c.font='bold 46px sans-serif';c.fillText('शौचालय',w/2,h*0.36);
     c.font='bold 24px sans-serif';c.fillText('SAUCHALAYA · TOILET',w/2,h*0.74);
   },300,110);
+  const sNight=ledBoard(300,110,'#5FD0F0',[
+    {t:'शौचालय',size:46,y:0.36,col:'#6FDCF8'},
+    {t:'SAUCHALAYA · TOILET',size:24,y:0.74,col:'#9FE8FF'}
+  ]);
   SAUCH_US.forEach((u,i)=>{
-    const {p,at}=roadside(u,(i%2)?-9.5:9.5);
+    const sgn=(i%2)?-1:1;
+    const {p,side,at}=roadside(u,sgn*9.5);
     const block=new THREE.Group();
     facing(block,at,p);
     const body=new THREE.Mesh(new THREE.BoxGeometry(4.2,2.9,3),MAT(0xCFC6B4));
@@ -913,14 +1384,26 @@ const PASALS=[];
       kh.position.set(sx*1.05,1.85,1.6);block.add(kh);
     }
     const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.9,1.1),
-      new THREE.MeshBasicMaterial({map:sTex}));
+      swapAtNight(new THREE.MeshBasicMaterial({map:sTex}),sTex,sNight));
     sign.position.set(0,3.5,1.2);block.add(sign);
+    const halo=signHalo(5.6,3.2,0.46,0x9AD8F5);
+    halo.position.set(0,3.5,1.26);block.add(halo);
+    /* one blue tube over the doors, which is all the light these ever have */
+    const tube=new THREE.Mesh(new THREE.BoxGeometry(3.2,0.1,0.1),
+      lampAtNight(new THREE.MeshBasicMaterial({color:0x8FB6C8}),0x8FB6C8,0xCFF0FF));
+    tube.position.set(0,2.62,1.6);block.add(tube);
+    const tubeGlow=lampGlow(3.2,0.4,0x7FC8EC);
+    tubeGlow.position.set(0,2.62,1.7);block.add(tubeGlow);
     /* tap and bucket, as there always are */
     const tap=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,1.1,6),MAT(0x8C8880));
     tap.position.set(2.5,0.55,1.2);block.add(tap);
     const bucket=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.2,0.4,9),MAT(0xC8342A));
     bucket.position.set(2.5,0.2,1.7);block.add(bucket);
     scene.add(block);
+    /* a stop in its own right — the micro pulls over and everybody gets down */
+    const camAt=p.clone().addScaledVector(side,sgn*4.5);
+    const lookAt=at.clone().addScaledVector(side,-sgn*2.2);
+    PASALS.push({u,kind:'sauch',pos:at.clone(),camAt,lookAt,sgn,sippers:[],steam:[]});
   });
 }
 
@@ -935,6 +1418,10 @@ const PASALS=[];
     c.font='bold 58px sans-serif';c.fillText('थकाली खाना घर',w/2,h*0.36);
     c.font='bold 30px sans-serif';c.fillText('THAKALI KHANA · DAL BHAT · MASU',w/2,h*0.72);
   },512,140);
+  const bigNight=ledBoard(512,140,'#FF9A3C',[
+    {t:'थकाली खाना घर',size:58,y:0.36,col:'#FFB25A'},
+    {t:'THAKALI KHANA · DAL BHAT · MASU',size:30,y:0.72,col:'#FFE07A'}
+  ]);
   THAKALI_US.forEach((u,i)=>{
     const sgn=(i%2)?-1:1;
     const {p,side,at}=roadside(u,sgn*13);
@@ -960,8 +1447,10 @@ const PASALS=[];
     door.position.set(0,1.25,1.44);g.add(door);
 
     const sign=new THREE.Mesh(new THREE.PlaneGeometry(6.4,1.75),
-      new THREE.MeshBasicMaterial({map:bigSign}));
+      swapAtNight(new THREE.MeshBasicMaterial({map:bigSign}),bigSign,bigNight));
     sign.position.set(0,4.6,1.1);g.add(sign);
+    const halo=signHalo(11,5,0.52,0xFFC98A);
+    halo.position.set(0,4.6,1.16);g.add(halo);
 
     /* terrace: stone platform, plastic tables and chairs, diners */
     const deck=new THREE.Mesh(new THREE.BoxGeometry(9.4,0.3,3.4),stone);
@@ -997,14 +1486,21 @@ const PASALS=[];
     g.add(bike.g);
 
     const glow=new THREE.Mesh(new THREE.SphereGeometry(0.22,8,7),
-      new THREE.MeshBasicMaterial({color:0xFFE0A0}));
+      lampAtNight(new THREE.MeshBasicMaterial({color:0xFFE0A0}),0xE8CC90,0xFFF6D6));
     glow.position.set(0,3.4,1.6);g.add(glow);
+    const gh=lampGlow(5.4,0.6,0xFFD9A0);gh.position.set(0,3.4,1.7);g.add(gh);
+    /* the windows of the hall, lit from inside once it is dark */
+    for(const sx of [-2.9,2.9]){
+      const lw=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.3),
+        ADD(null,0xFFD48A));lw.position.set(sx,2.1,1.5);g.add(lw);
+      glowAtNight(lw,0.5);
+    }
 
     scene.add(g);
     /* these are proper stops too — the micro parks for dal bhat */
     const camAt=p.clone().addScaledVector(side,sgn*4.5);
     const lookAt=at.clone().addScaledVector(side,-sgn*2.6);
-    PASALS.push({u,pos:at.clone(),camAt,lookAt,sgn,sippers:diners,steam:[]});
+    PASALS.push({u,kind:'thakali',pos:at.clone(),camAt,lookAt,sgn,sippers:diners,steam:[]});
   });
 }
 
@@ -1031,6 +1527,206 @@ const HOLES=[];
   });
 }
 
+/* ---------- THE KHOLA AND THE PUL — the river, and the bridge that carries
+   the road over it. The gorge is cut into the terrain by terrainY(), so the
+   deck, the piers and the water all agree on where the ground went. ---------- */
+let riverFlow=null;                    /* the water texture, scrolled downstream */
+const BR_HS=33/LEN0;                   /* half the deck, in curve units */
+{
+  const SIDED=(c)=>new THREE.MeshPhongMaterial({color:c,flatShading:true,
+    shininess:0,side:THREE.DoubleSide});
+  const conc=SIDED(0xC3BCAC),soff=SIDED(0x9A9386),pier=MAT(0xA9A294),
+        steel=MAT(0x8E8A82),paint=MAT(0xE8DCC0);
+
+  /* a quad strip from [left,right] pairs — the deck, its soffit and its skirts */
+  function strip(pairs,mat){
+    const pos=[],idx=[];
+    for(let i=0;i<pairs.length;i++){
+      const a=pairs[i][0],b=pairs[i][1];
+      pos.push(a.x,a.y,a.z,b.x,b.y,b.z);
+      if(i<pairs.length-1){const o=i*2;idx.push(o,o+1,o+2,o+1,o+3,o+2);}
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    g.setIndex(idx);g.computeVertexNormals();
+    return new THREE.Mesh(g,mat);
+  }
+
+  const STEPS=30,DECK_W=7.4,DECK_D=1.3;
+  const top=[],under=[],skL=[],skR=[],kbL=[],kbR=[],mid=[];
+  for(let i=0;i<=STEPS;i++){
+    const u=((BRIDGE_U-BR_HS+2*BR_HS*i/STEPS)%1+1)%1;
+    const p=curve.getPointAt(u),tan=curve.getTangentAt(u);
+    const side=new THREE.Vector3().crossVectors(tan,UP).normalize();
+    const l=p.clone().addScaledVector(side,-DECK_W),r=p.clone().addScaledVector(side,DECK_W);
+    l.y=p.y-0.02;r.y=p.y-0.02;
+    const lb=l.clone(),rb=r.clone();lb.y-=DECK_D;rb.y-=DECK_D;
+    top.push([l,r]);under.push([lb,rb]);skL.push([l,lb]);skR.push([r,rb]);
+    kbL.push([l.clone().setY(l.y+0.46),l]);kbR.push([r,r.clone().setY(r.y+0.46)]);
+    mid.push({p,tan,side});
+  }
+  scene.add(strip(top,conc),strip(under,soff),strip(skL,soff),strip(skR,soff),
+            strip(kbL,conc),strip(kbR,conc));
+
+  /* pipe railings and their posts, one instanced mesh each */
+  const rails=new THREE.InstancedMesh(new THREE.BoxGeometry(0.13,0.13,1),paint,STEPS*4);
+  const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(0.17,1.6,0.17),steel,(STEPS+1)*2);
+  {
+    const m4=new THREE.Matrix4(),q4=new THREE.Quaternion(),sc=new THREE.Vector3(),
+          zero=new THREE.Vector3(),dir=new THREE.Vector3();
+    let ri=0,pi=0;
+    for(let i=0;i<mid.length;i++){
+      const {p,tan,side}=mid[i];
+      for(const sx of [-1,1]){
+        const at=p.clone().addScaledVector(side,sx*(DECK_W-0.95));
+        if(i%3===0){
+          q4.setFromRotationMatrix(new THREE.Matrix4().lookAt(zero,tan,UP));
+          posts.setMatrixAt(pi++,m4.compose(new THREE.Vector3(at.x,p.y+0.78,at.z),
+            q4,sc.set(1,1,1)));
+        }
+        if(i<mid.length-1){
+          const nx=mid[i+1].p.clone().addScaledVector(mid[i+1].side,sx*(DECK_W-0.95));
+          const seg=at.distanceTo(nx),c=at.clone().lerp(nx,0.5);
+          q4.setFromRotationMatrix(new THREE.Matrix4().lookAt(zero,dir.subVectors(nx,at).normalize(),UP));
+          for(const hy of [0.9,1.48])
+            rails.setMatrixAt(ri++,m4.compose(new THREE.Vector3(c.x,p.y+hy,c.z),
+              q4,sc.set(1,1,seg*1.04)));
+        }
+      }
+    }
+    rails.count=ri;posts.count=pi;
+  }
+  scene.add(rails,posts);
+
+  /* a steel through-truss over the span. Every member is one instance of the
+     same unit box, scaled to length — 75 of them cost a single draw call. */
+  {
+    const PN=8,TH=0.3,H=6.3,OFF=DECK_W-0.15;
+    const girder=new THREE.MeshPhongMaterial({color:0x8D949B,flatShading:true,shininess:0});
+    const truss=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),girder,96);
+    const q=new THREE.Quaternion(),m4=new THREE.Matrix4(),sc=new THREE.Vector3(),
+          c=new THREE.Vector3(),d=new THREE.Vector3(),zero=new THREE.Vector3();
+    let ti=0;
+    const member=(a,b,th)=>{
+      d.subVectors(b,a);const len=d.length();
+      if(len<0.02||ti>=96) return;
+      q.setFromRotationMatrix(new THREE.Matrix4().lookAt(zero,d.normalize(),UP));
+      truss.setMatrixAt(ti++,m4.compose(c.copy(a).lerp(b,0.5),q,sc.set(th,th,len)));
+    };
+    const low=[],high=[];
+    for(let i=0;i<=PN;i++){
+      const u=((BRIDGE_U-BR_HS+2*BR_HS*i/PN)%1+1)%1;
+      const p=curve.getPointAt(u),tan=curve.getTangentAt(u);
+      const side=new THREE.Vector3().crossVectors(tan,UP).normalize();
+      const a=[],b=[];
+      for(const sx of [-1,1]){
+        const foot=p.clone().addScaledVector(side,sx*OFF);foot.y=p.y+0.15;
+        a.push(foot);b.push(foot.clone().setY(foot.y+H));
+      }
+      low.push(a);high.push(b);
+    }
+    for(let i=0;i<=PN;i++){
+      for(let s=0;s<2;s++){
+        member(low[i][s],high[i][s],TH);                 /* vertical */
+        if(i<PN){
+          member(high[i][s],high[i+1][s],TH*1.2);        /* top chord */
+          member(low[i][s],low[i+1][s],TH*1.2);          /* bottom chord */
+          if(i%2) member(low[i][s],high[i+1][s],TH*0.8); /* diagonals, alternating */
+          else    member(high[i][s],low[i+1][s],TH*0.8);
+        }
+      }
+      member(high[i][0],high[i][1],TH*0.9);              /* strut overhead */
+    }
+    truss.count=ti;
+    scene.add(truss);
+  }
+
+  /* two piers standing in the shallows, each a wall across the river */
+  for(const sx of [-1,1]){
+    const p=curve.getPointAt(((BRIDGE_U+sx*17/LEN0)%1+1)%1),
+          tan=curve.getTangentAt(((BRIDGE_U+sx*17/LEN0)%1+1)%1);
+    const g=new THREE.Group();
+    g.position.copy(p);g.lookAt(p.x+tan.x,p.y,p.z+tan.z);
+    const base=terrainY(p.x,p.z),H=Math.max(1.5,p.y-DECK_D-0.1-base);
+    const col=new THREE.Mesh(new THREE.BoxGeometry(11.8,H,3.1),pier);
+    col.position.y=base+H/2-p.y;g.add(col);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(13.4,1.2,4.6),pier);
+    foot.position.y=base+0.6-p.y;g.add(foot);
+    scene.add(g);
+  }
+
+  /* the water: a ribbon down the channel whose ripples scroll downstream */
+  const rip=tex((c,w,h)=>{
+    const g=c.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,'#2C6C86');g.addColorStop(.5,'#3C84A0');g.addColorStop(1,'#2C6C86');
+    c.fillStyle=g;c.fillRect(0,0,w,h);
+    c.strokeStyle='rgba(228,244,250,.34)';c.lineWidth=2.2;
+    for(let i=0;i<46;i++){
+      const x=Math.random()*w,y=Math.random()*h,l=10+Math.random()*34;
+      c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+l*0.5,y-3.5,x+l,y);c.stroke();
+    }
+  },256,256);
+  rip.wrapS=rip.wrapT=THREE.RepeatWrapping;rip.repeat.set(1.6,16);
+  riverFlow=rip;
+  {
+    const N=96,pos=[],uv=[],idx=[],half=RIV_W+3.6;
+    for(let i=0;i<=N;i++){
+      const a=-RIV_RUN+2*RIV_RUN*i/N;
+      const wig=Math.sin(a*0.0115)*14+Math.sin(a*0.026)*6;
+      const cx=BR_P.x+BR_A.x*a+BR_T.x*wig, cz=BR_P.z+BR_A.z*a+BR_T.z*wig;
+      pos.push(cx-BR_T.x*half,WATER_Y,cz-BR_T.z*half,
+               cx+BR_T.x*half,WATER_Y,cz+BR_T.z*half);
+      uv.push(0,i/N,1,i/N);
+      if(i<N){const o=i*2;idx.push(o,o+1,o+2,o+1,o+3,o+2);}
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+    g.setIndex(idx);g.computeVertexNormals();
+    scene.add(new THREE.Mesh(g,new THREE.MeshPhongMaterial({map:rip,transparent:true,
+      opacity:0.9,shininess:80,specular:0x9FD8E8,side:THREE.DoubleSide})));
+  }
+
+  /* boulders in the stream, the way every khola has them */
+  for(let i=0;i<(LOW?9:16);i++){
+    const a=-RIV_RUN*0.86+Math.random()*RIV_RUN*1.72;
+    const wig=Math.sin(a*0.0115)*14+Math.sin(a*0.026)*6;
+    const off=(Math.random()-0.5)*RIV_W*1.8;
+    const s=0.7+Math.random()*1.9;
+    const b=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),MAT(0x9A9184));
+    b.position.set(BR_P.x+BR_A.x*a+BR_T.x*(wig+off),WATER_Y-0.4+s*0.45,
+                   BR_P.z+BR_A.z*a+BR_T.z*(wig+off));
+    b.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
+    b.scale.y=0.68;scene.add(b);
+  }
+
+  /* the name board, facing the traffic coming up to the crossing */
+  {
+    const bt=tex((c,w,h)=>{
+      c.fillStyle='#1B5E86';c.fillRect(0,0,w,h);
+      c.strokeStyle='#F0C21C';c.lineWidth=8;c.strokeRect(6,6,w-12,h-12);
+      c.fillStyle='#F4F8FB';c.textAlign='center';c.textBaseline='middle';
+      c.font='bold 50px sans-serif';c.fillText('त्रिशूली खोला',w/2,h*0.36);
+      c.font='bold 25px sans-serif';c.fillText('TRISHULI KHOLA · PUL',w/2,h*0.72);
+    },420,132);
+    const {at}=roadside(((BRIDGE_U-BR_HS-0.007)%1+1)%1,-9.5);
+    const back=curve.getPointAt(((BRIDGE_U-BR_HS-0.04)%1+1)%1);
+    const g=new THREE.Group();facing(g,at,back);
+    for(const sx of [-1.6,1.6]){
+      const post=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.13,4.6,6),steel);
+      post.position.set(sx,2.3,0);g.add(post);
+    }
+    const bd=new THREE.Mesh(new THREE.PlaneGeometry(4.2,1.32),
+      dimAtNight(new THREE.MeshBasicMaterial({map:bt}),0.7));   /* reflective, not lit */
+    bd.position.set(0,3.7,0.09);g.add(bd);
+    scene.add(g);
+  }
+
+  /* the expansion joints at either end give the deck its two little knocks */
+  for(const sx of [-1,1])
+    HOLES.push({d:(((BRIDGE_U+sx*BR_HS)*LEN0)%LEN0+LEN0)%LEN0,jolt:0.055});
+}
+
 /* ---------- CHILDREN CROSSING — the micro waits ---------- */
 const CROSSINGS=[];
 {
@@ -1050,35 +1746,199 @@ const CROSSINGS=[];
   });
 }
 
+/* ---------- KHOLSI — the little streams. Every fold in these hills has one
+   coming off the top, and they wind rather than run straight because they take
+   the steepest way down. That is exactly how these are traced: sample the same
+   terrain function the hills are built from, step downhill, and let the path
+   arc where the ground makes it arc. Water never runs uphill this way, and each
+   one ends where the road cuts it off, at a culvert headwall. ---------- */
+{
+  const water=new THREE.MeshPhongMaterial({map:riverFlow,transparent:true,
+    opacity:0.93,shininess:80,specular:0x9FD8E8,side:THREE.DoubleSide});
+  const bedM=MAT(0x7A6F60),wallM=MAT(0xB4AE9F),mouthM=MAT(0x15120E);
+  const UPV=new THREE.Vector3(0,1,0);
+
+  /* one step at a time, down the gradient, with enough momentum to carry it
+     over the flat of a terrace instead of stalling there */
+  function course(from){
+    const pts=[from.clone()];
+    const dir=new THREE.Vector3(),g=new THREE.Vector3();
+    let p=from.clone(),last=p.y;
+    for(let i=0;i<120;i++){
+      const e=3.4;
+      g.set(terrainY(p.x-e,p.z)-terrainY(p.x+e,p.z),0,
+            terrainY(p.x,p.z-e)-terrainY(p.x,p.z+e));
+      if(i===0){
+        if(g.lengthSq()<1e-8) break;
+        dir.copy(g).normalize();
+      }else{
+        dir.lerp(g.normalize(),0.4).normalize();
+      }
+      const n=p.clone().addScaledVector(dir,5.4);
+      n.y=terrainY(n.x,n.z);
+      if(n.y>last+0.9) break;                    /* it has started climbing */
+      if(Math.hypot(n.x,n.z)>610) break;
+      pts.push(n);
+      if(nearRoad(n.x,n.z).d<8.5) break;         /* the culvert takes it under */
+      if(riverMask(n.x,n.z)>0.25) break;         /* it has joined the khola */
+      p=n;last=n.y;
+    }
+    return pts;
+  }
+
+  function buildStream(pts){
+    const posW=[],uvW=[],idxW=[],posB=[],idxB=[];
+    const d=new THREE.Vector3(),side=new THREE.Vector3();
+    let run=0;
+    for(let i=0;i<pts.length;i++){
+      const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)];
+      d.subVectors(b,a).setY(0);
+      if(d.lengthSq()<1e-8) d.set(0,0,1);
+      side.crossVectors(d.normalize(),UPV).normalize();
+      if(i>0) run+=pts[i].distanceTo(pts[i-1]);
+      const p=pts[i],w=0.8+(i/(pts.length-1))*2.5;   /* it gathers as it goes down */
+      for(const s of [-1,1]){
+        const q=p.clone().addScaledVector(side,s*w);
+        posW.push(q.x,terrainY(q.x,q.z)+0.17,q.z);
+        const r=p.clone().addScaledVector(side,s*(w+0.95));
+        posB.push(r.x,terrainY(r.x,r.z)+0.06,r.z);
+      }
+      uvW.push(0,run/200,1,run/200);
+      if(i<pts.length-1){
+        const o=i*2;
+        idxW.push(o,o+1,o+2,o+1,o+3,o+2);
+        idxB.push(o,o+1,o+2,o+1,o+3,o+2);
+      }
+    }
+    const gw=new THREE.BufferGeometry();
+    gw.setAttribute('position',new THREE.Float32BufferAttribute(posW,3));
+    gw.setAttribute('uv',new THREE.Float32BufferAttribute(uvW,2));
+    gw.setIndex(idxW);gw.computeVertexNormals();
+    const gb=new THREE.BufferGeometry();
+    gb.setAttribute('position',new THREE.Float32BufferAttribute(posB,3));
+    gb.setIndex(idxB);gb.computeVertexNormals();
+    scene.add(new THREE.Mesh(gb,bedM),new THREE.Mesh(gw,water));
+
+    /* where it meets the road, the headwall and the mouth of the pipe */
+    const end=pts[pts.length-1],back=pts[Math.max(0,pts.length-2)];
+    if(nearRoad(end.x,end.z).d<11){
+      const g=new THREE.Group();
+      g.position.set(end.x,terrainY(end.x,end.z),end.z);
+      g.lookAt(back.x,g.position.y,back.z);         /* +Z faces back upstream */
+      const hw=new THREE.Mesh(new THREE.BoxGeometry(4.6,1.5,0.7),wallM);
+      hw.position.y=0.5;g.add(hw);
+      const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.72,0.72,0.9,10),mouthM);
+      pipe.rotation.x=Math.PI/2;pipe.position.set(0,0.42,0.28);g.add(pipe);
+      scene.add(g);
+    }
+  }
+
+  /* Several of these have to be in the opening shot, so the first few sit just
+     up the road from where the scene starts parked. */
+  for(const u of [0.062,0.082,0.104,0.128,0.30,0.55,0.80]){
+    let src=null;
+    for(const s of [-1,1]) for(let dd=58;dd<=142;dd+=28){
+      const {at}=roadside(u,s*dd);
+      if(riverMask(at.x,at.z)>0.2) continue;
+      if(!src||at.y>src.y) src=at.clone();          /* the highest ground: the source */
+    }
+    if(!src) continue;
+    const c=course(src);
+    if(c.length>=14) buildStream(c);
+  }
+}
+
+/* ---------- PASSENGERS — they ride inside, and they get down at every stop.
+   They are children of the micro, so while they are aboard they need no
+   minding at all; the waypoints below are in the micro's own coordinates. ---------- */
+const RIDERS=[];
+const SEAT_Y=1.0;                                 /* the floor of the micro */
+const P_IN=new THREE.Vector3(-1.05,SEAT_Y,0.15);  /* stood in the doorway */
+const P_OUT=new THREE.Vector3(-2.55,-0.12,0.42);  /* down on the road beside it */
+{
+  const SHIRT=[0xB8232E,0x2B4880,0xCE9A1B,0x2C6754];
+  const seats=[[-0.72,-1.3],[0.74,-0.8],[-0.72,1.1],[0.74,2.0]];
+  seats.forEach((s,i)=>{
+    const pr=makePerson(SHIRT[i%SHIRT.length],0.88);
+    pr.who.position.set(s[0],SEAT_Y,s[1]);
+    pr.who.rotation.y=Math.PI;                    /* facing the way we are going */
+    pr.who.visible=false;                         /* nothing shows through the panels */
+    micro.add(pr.who);
+    RIDERS.push({...pr,seat:new THREE.Vector3(s[0],SEAT_Y,s[1]),
+                 spot:new THREE.Vector3(),look:new THREE.Vector3(),
+                 path:null,cum:[0],len:0,dur:2.7,
+                 x:0,face:Math.PI,order:i,ph:Math.random()*6.28,
+                 rate:0.46+Math.random()*0.3,blink:2+Math.random()*3});
+  });
+}
+
 /* ---------- ONCOMING TRAFFIC — bikes and micros headed back to Kathmandu ---------- */
 const TRAFFIC=[];
 {
-  for(let i=0;i<2;i++){
+  for(let i=0;i<(LOW?1:2);i++){
     const from=DESTS[(Math.random()*DESTS.length)|0];
     const m=miniMicro(from);
     m.g.visible=false;scene.add(m.g);
     TRAFFIC.push({g:m.g,kind:'micro',speed:17+Math.random()*5,
                   on:false,wait:5+i*11+Math.random()*8,d:0});
   }
-  for(let i=0;i<3;i++){
-    const b=motorbike([0x1B2530,0x8C2A20,0x2B4880][i%3]);
+  for(let i=0;i<(LOW?2:3);i++){
+    const b=motorbike([0x1B2530,0x8C2A20,0x2B4880][i%3],true);
     b.g.visible=false;scene.add(b.g);
     TRAFFIC.push({g:b.g,kind:'bike',rider:b.rider,speed:23+Math.random()*9,
                   on:false,wait:3+i*7+Math.random()*9,d:0});
   }
 }
+/* where something is in relation to the roadworks: − still short of them,
+   + already through. Both directions measure it the same way. */
+function worksRel(d){return ((d-WORKS.d+LEN*1.5)%LEN)-LEN/2;}
+const PASS_OFF=-2.3;                   /* the one line left open past the mud */
+
 /* they run the loop backwards, on the far side, and recycle once well past us */
 function moveTraffic(dt,now){
   const s=now*0.001;
   for(const v of TRAFFIC){
-    if(!v.on){
-      v.wait-=dt;
-      if(v.wait>0) continue;
-      v.on=true;v.g.visible=true;
-      v.d=(dist+230+Math.random()*150)%LEN;        /* appear up the road */
-      continue;
+    if(v.on) continue;
+    v.wait-=dt;
+    if(v.wait>0) continue;
+    v.on=true;v.g.visible=true;v.hold=false;
+    v.d=(dist+230+Math.random()*150)%LEN;          /* appear up the road */
+  }
+
+  /* Half the carriageway is under the pahiro, so it runs one lane at a time.
+     While we are coming up to it the flagman holds the other side: they queue
+     in their own lane short of the mud, nose to tail, and only come through
+     once we are clear. Anyone already in the works is waved on through. */
+  const line=new Map();
+  if(WORKS.on){
+    const ours=worksRel(dist);
+    if(ours>-165&&ours<50){
+      const q=[];
+      for(const v of TRAFFIC){
+        if(!v.on) continue;
+        const r=worksRel(v.d);
+        if(r>0&&r<240) q.push({v,r});
+      }
+      q.sort((a,b)=>a.r-b.r);                      /* nearest the works first */
+      q.forEach((w,i)=>{
+        const stop=38+i*9.5;
+        /* only whoever is still short of the line — anybody already into the
+           works is waved on through. Once stopped they stay stopped: without
+           that, the rounding on the way back through worksRel() drops them a
+           hair under their own line and lets them straight back out. */
+        if(w.r>=stop-2||w.v.hold) line.set(w.v,stop);
+      });
     }
+  }
+
+  for(const v of TRAFFIC){
+    if(!v.on) continue;
     v.d=(v.d-v.speed*dt+LEN)%LEN;
+    const stop=line.get(v);
+    v.hold=false;
+    if(stop!==undefined&&worksRel(v.d)<stop){      /* stand on the line and wait */
+      v.d=((WORKS.d+stop)%LEN+LEN)%LEN;v.hold=true;
+    }
     const rel=((v.d-dist+LEN/2)%LEN)-LEN/2;        /* + ahead of us, − behind */
     if(rel<-75){                                   /* gone by; park it until next time */
       v.on=false;v.g.visible=false;
@@ -1090,13 +1950,19 @@ function moveTraffic(dt,now){
     const ahead=curve.getPointAt(((u2-0.006)%1+1)%1);
     const tanv=curve.getTangentAt(u2);
     const sidev=new THREE.Vector3().crossVectors(tanv,UP).normalize();
-    const at=q.clone().addScaledVector(sidev,-LANE);
+    /* and when they do come, they come over onto our side to get round it */
+    let off=-LANE;
+    if(WORKS.on){
+      const k=1-Math.min(1,Math.abs(worksRel(v.d))/32);
+      if(k>0) off=-LANE+(PASS_OFF+LANE)*(k*k*(3-2*k));
+    }
+    const at=q.clone().addScaledVector(sidev,off);
     v.g.position.set(at.x,q.y+0.1,at.z);
     v.g.lookAt(ahead.x,ahead.y+0.1,ahead.z);
     v.g.rotateY(Math.PI);
     if(v.kind==='bike'){
-      v.g.rotation.z+=Math.sin(s*2.4+v.speed)*0.06;   /* a little weave */
-      v.rider.arm.rotation.x=-0.75;
+      if(!v.hold) v.g.rotation.z+=Math.sin(s*2.4+v.speed)*0.06;   /* a little weave */
+      v.rider.arm.rotation.x=v.hold?-0.25:-0.75;                  /* feet down, waiting */
     }
   }
 }
@@ -1132,9 +1998,12 @@ const HERD=[];
     return {g,neck,tail};
   }
   /* goat flocks beside the road, plus a cow or two on the shoulder */
-  const spots=[{u:0.13,off:9,n:5,cow:false},{u:0.34,off:-10,n:4,cow:false},
-               {u:0.6,off:8.5,n:0,cow:true},{u:0.85,off:-9,n:5,cow:false},
-               {u:0.05,off:7.5,n:0,cow:true}];
+  const spots=LOW
+    ?[{u:0.13,off:9,n:3,cow:false},{u:0.6,off:8.5,n:0,cow:true},
+      {u:0.85,off:-9,n:3,cow:false}]
+    :[{u:0.13,off:9,n:5,cow:false},{u:0.34,off:-10,n:4,cow:false},
+      {u:0.6,off:8.5,n:0,cow:true},{u:0.85,off:-9,n:5,cow:false},
+      {u:0.05,off:7.5,n:0,cow:true}];
   for(const s of spots){
     const {p,side,at}=roadside(s.u,s.off);
     for(let k=0;k<s.n;k++){
@@ -1158,6 +2027,10 @@ const HERD=[];
 
 /* ---------- CULTURE ALONG THE ROAD ---------- */
 const SWINGS=[],FLAGS=[];
+let gadhiFlag=null;                  /* the national flag over the gadhi */
+let SLIDE=null;                      /* the pahiro, and the machine on it */
+/* where the road narrows to one lane, which the traffic on both sides obeys */
+const WORKS={d:0,on:false};
 {
   /* prayer flags strung across the road */
   for(const u of [0.28,0.66]){
@@ -1174,7 +2047,7 @@ const SWINGS=[],FLAGS=[];
       const x=a.x+(b.x-a.x)*t2, z=a.z+(b.z-a.z)*t2;
       const sag=Math.sin(t2*Math.PI)*1.5;
       const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.85,0.62),
-        new THREE.MeshBasicMaterial({color:FC[k%5],side:THREE.DoubleSide}));
+        dimAtNight(new THREE.MeshBasicMaterial({color:FC[k%5],side:THREE.DoubleSide}),0.3));
       fl.position.set(x,a.y+8.4-sag,z);
       fl.lookAt(x+tan.x,a.y+8.4-sag,z+tan.z);
       scene.add(fl);
@@ -1203,11 +2076,111 @@ const SWINGS=[],FLAGS=[];
     const box=new THREE.Mesh(new THREE.BoxGeometry(1.7,1.3,1.7),MAT(0xF2EFE7));
     box.position.y=3.15;st.add(box);
     const face=new THREE.Mesh(new THREE.PlaneGeometry(1.66,1.26),
-      new THREE.MeshBasicMaterial({map:eyeTex}));
+      dimAtNight(new THREE.MeshBasicMaterial({map:eyeTex}),0.34));
     face.position.set(0,3.15,0.87);st.add(face);
     const spire=new THREE.Mesh(new THREE.ConeGeometry(0.6,1.5,9),MAT(0xE8B93C));
     spire.position.y=4.5;st.add(spire);
     scene.add(st);
+  }
+
+  /* ---- SINDHULI GADHI — the hill fort the pass is named for, up on the
+     highest ground we can find beside the road, with the flag over it ---- */
+  {
+    const U=0.47;
+    /* Well across the valley, on the highest ground inside the loop. A fort on
+       a hill only reads if it is far enough off that it sits low in the frame —
+       up close it towers straight out of the top of the shot. The radius test
+       keeps it on the terrain plane, which also picks the inward side. */
+    let best=null;
+    for(const u of [0.45,0.47,0.49]) for(let d=200;d<=290;d+=10) for(const s of [-1,1]){
+      const {at}=roadside(u,s*d);
+      if(Math.hypot(at.x,at.z)>520) continue;
+      if(!best||at.y>best.y) best=at.clone();
+    }
+    if(!best) best=roadside(U,-210).at.clone();
+    const stone=MAT(0x9A9184),shade=MAT(0x7E766C),wood=MAT(0x5A4028);
+    const g=new THREE.Group();g.position.copy(best);
+    /* The gadhi crowns its own hill — that is the whole point of a fort, and it
+       is also the only way it clears the ridges between here and the road. */
+    const CROWN=32;
+    const mound=new THREE.Mesh(new THREE.CylinderGeometry(19,48,78,9),
+      new THREE.MeshPhongMaterial({color:0x55803C,flatShading:true,shininess:0}));
+    mound.position.y=CROWN-39;g.add(mound);
+    const top=new THREE.Group();top.position.y=CROWN;g.add(top);
+    const plinth=new THREE.Mesh(new THREE.CylinderGeometry(15,19,9,8),MAT(0x89806F));
+    plinth.position.y=-3;top.add(plinth);
+    for(let i=0;i<8;i++){
+      const a=i/8*Math.PI*2,rot=-(a+Math.PI/2);
+      const cx=Math.cos(a)*13.6,cz=Math.sin(a)*13.6;
+      if(i===2){                          /* the gate, facing down the hill */
+        for(const sx of [-1,1]){
+          const jamb=new THREE.Mesh(new THREE.BoxGeometry(3.6,5.4,2),stone);
+          jamb.position.set(cx-Math.sin(a)*sx*4.1,6.5,cz+Math.cos(a)*sx*4.1);
+          jamb.rotation.y=rot;top.add(jamb);
+        }
+        const lintel=new THREE.Mesh(new THREE.BoxGeometry(10.6,1.5,2.1),stone);
+        lintel.position.set(cx,8.5,cz);lintel.rotation.y=rot;top.add(lintel);
+        const door=new THREE.Mesh(new THREE.BoxGeometry(4.4,4.6,0.5),wood);
+        door.position.set(cx,6.1,cz);door.rotation.y=rot;top.add(door);
+      }else{
+        const wall=new THREE.Mesh(new THREE.BoxGeometry(10.8,5.6,2),stone);
+        wall.position.set(cx,6.6,cz);wall.rotation.y=rot;top.add(wall);
+      }
+      /* merlons along the parapet */
+      for(let k=-2;k<=2;k++){
+        const m=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.6,2.1),shade);
+        m.position.set(cx-Math.sin(a)*k*2.3,10.2,cz+Math.cos(a)*k*2.3);
+        m.rotation.y=rot;top.add(m);
+      }
+    }
+    /* the keep, and the flag over it */
+    const keep=new THREE.Mesh(new THREE.BoxGeometry(8,7,8),stone);
+    keep.position.y=7.4;top.add(keep);
+    const keepRoof=new THREE.Mesh(new THREE.ConeGeometry(6.6,3.4,4),MAT(0x6E5A44));
+    keepRoof.position.y=12.5;keepRoof.rotation.y=Math.PI/4;top.add(keepRoof);
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.22,13,6),MAT(0xCFC6B4));
+    pole.position.y=19;top.add(pole);
+    const flagTex=tex((c,w,h)=>{
+      c.clearRect(0,0,w,h);
+      /* the two pennants, the crimson and the blue border */
+      const P=(inset)=>{c.beginPath();
+        c.moveTo(inset,inset);c.lineTo(w*0.86-inset,h*0.42);
+        c.lineTo(w*0.30,h*0.42);c.lineTo(w*0.95-inset,h*0.93);
+        c.lineTo(inset,h-inset);c.closePath();};
+      c.fillStyle='#003893';P(0);c.fill();
+      c.fillStyle='#DC143C';P(9);c.fill();
+      c.fillStyle='#fff';
+      c.beginPath();c.arc(w*0.24,h*0.68,w*0.075,0,6.29);c.fill();      /* the sun */
+      c.beginPath();c.arc(w*0.23,h*0.20,w*0.072,0,6.29);
+      c.arc(w*0.235,h*0.235,w*0.058,0,6.29,true);c.fill();             /* the moon */
+    },192,256);
+    const flag=new THREE.Mesh(new THREE.PlaneGeometry(5.4,7.2),
+      new THREE.MeshBasicMaterial({map:flagTex,transparent:true,side:THREE.DoubleSide}));
+    /* hung off a pivot at the masthead, so it swings round the pole in the wind */
+    gadhiFlag=new THREE.Group();gadhiFlag.position.y=22.2;top.add(gadhiFlag);
+    flag.position.x=2.8;gadhiFlag.add(flag);
+    scene.add(g);
+
+    /* and the board on the roadside that tells you where you are */
+    const gTex=tex((c,w,h)=>{
+      c.fillStyle='#5A3A1E';c.fillRect(0,0,w,h);
+      c.strokeStyle='#E8DCC0';c.lineWidth=6;c.strokeRect(7,7,w-14,h-14);
+      c.fillStyle='#F6EFD8';c.textAlign='center';c.textBaseline='middle';
+      c.font='bold 54px sans-serif';c.fillText('सिन्धुली गढी',w/2,h*0.34);
+      c.font='bold 25px sans-serif';c.fillText('SINDHULI GADHI · 1495 m',w/2,h*0.66);
+      c.font='bold 19px sans-serif';c.fillText('बी.पी. राजमार्ग',w/2,h*0.87);
+    },440,150);
+    const {at:sAt}=roadside(U-0.012,-8.6);
+    const back=curve.getPointAt(((U-0.05)%1+1)%1);
+    const sg=new THREE.Group();facing(sg,sAt,back);
+    for(const sx of [-1.7,1.7]){
+      const post=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.14,4.4,6),MAT(0x8E8A82));
+      post.position.set(sx,2.2,0);sg.add(post);
+    }
+    const bd=new THREE.Mesh(new THREE.PlaneGeometry(4.4,1.5),
+      dimAtNight(new THREE.MeshBasicMaterial({map:gTex}),0.7));
+    bd.position.set(0,3.5,0.1);sg.add(bd);
+    scene.add(sg);
   }
 
   /* chautari — a stone rest platform under a big tree */
@@ -1258,15 +2231,489 @@ const SWINGS=[],FLAGS=[];
     SWINGS.push({swing,rider,ph:Math.random()*6.28,rate:0.5+Math.random()*0.2});
   }
 
-  /* kilometre stones */
-  for(let k=0;k<12;k++){
-    const {at,p}=roadside(k/12,7.4);
-    const st=new THREE.Group();facing(st,at,p);
-    const stone=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.9,0.24),MAT(0xF2EFE7));
-    stone.position.y=0.45;st.add(stone);
-    const cap=new THREE.Mesh(new THREE.BoxGeometry(0.52,0.22,0.26),MAT(0xC8342A));
-    cap.position.y=0.86;st.add(cap);
-    scene.add(st);
+  /* ---- PAHIRO — the landslide, and the dozer working it back. There is one of
+     these on every hill road in the country: half the carriageway under a fan
+     of mud, a machine picking at it, a man with a red flag letting one side
+     through at a time, and everybody else stood watching with their tea. ---- */
+  {
+    /* It has to come down on the far half, or we would be driving through the
+       mud ourselves — so find a stretch where the far side is the hillside. */
+    let U=0.762,best=-1e9;
+    /* the stretch past the last crossing is the only clear run long enough:
+       everything else on this side of the loop already has something on it,
+       and the approach has to stay outside every stop's radius or the camera
+       pulls back for a tea break just as the pahiro comes into view */
+    for(let u=0.752;u<0.776;u+=0.003){
+      const {p,side}=roadside(u,0);
+      const hi=terrainY(p.x+side.x*24,p.z+side.z*24);
+      const lo=terrainY(p.x-side.x*24,p.z-side.z*24);
+      if(hi-lo>best){best=hi-lo;U=u;}
+    }
+    const {p:SP,side:SS}=roadside(U,0);
+    /* everything below is placed in metres across the road (+ = the far, uphill
+       side) and along it, then dropped onto whatever the terrain is doing */
+    const put=(obj,across,along,lift)=>{
+      const w=SP.clone().addScaledVector(SS,across)
+                        .addScaledVector(curve.getTangentAt(U),along);
+      obj.position.set(w.x,terrainY(w.x,w.z)+(lift||0),w.z);
+      scene.add(obj);return obj;
+    };
+    const mud=[0x6B5340,0x7C6247,0x8A7358,0x5E4A38],rockC=[0x8E8578,0x9A9184,0x7E766C];
+
+    /* the fan on the road: flattened lumps from the hillside down to just past
+       the centreline, thinning as it comes */
+    for(let i=0;i<38;i++){
+      const k=Math.random();
+      const across=1.2+k*13;                       /* nearest lump clears our lane */
+      const along=(Math.random()-0.5)*17*(0.4+k);
+      /* keep the lumps small where the machine is standing, or it disappears
+         into its own spoil heap */
+      const near=Math.hypot(across-7.4,along+1.5)<4.4;
+      const sz=(0.7+k*2.6+Math.random()*0.9)*(near?0.42:1);
+      const b=new THREE.Mesh(new THREE.DodecahedronGeometry(sz,0),
+        MAT(mud[(Math.random()*mud.length)|0]));
+      b.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
+      b.scale.y=0.34+Math.random()*0.2;
+      put(b,across,along,sz*0.2);
+    }
+    /* boulders that came down with it */
+    for(let i=0;i<7;i++){
+      const sz=0.9+Math.random()*1.7;
+      const r=new THREE.Mesh(new THREE.DodecahedronGeometry(sz,0),
+        MAT(rockC[(Math.random()*rockC.length)|0]));
+      r.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
+      put(r,2.5+Math.random()*11,(Math.random()-0.5)*15,sz*0.35);
+    }
+    /* the scar it left, running up the hill above the road */
+    for(let i=0;i<11;i++){
+      const k=i/10;
+      const sz=4.6-k*2.6;
+      const s=new THREE.Mesh(new THREE.DodecahedronGeometry(sz,0),
+        MAT(mud[i%2?0:3]));
+      s.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
+      s.scale.y=0.2;
+      put(s,13+k*46,(Math.random()-0.5)*9*(1-k*0.6),-0.6);
+    }
+    /* two trees that came down with the hillside, lying in the debris */
+    for(let i=0;i<2;i++){
+      const g=new THREE.Group();
+      const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.42,7,6),MAT(0x4A3623));
+      tr.rotation.z=Math.PI/2;tr.rotation.y=Math.random();g.add(tr);
+      const cr=new THREE.Mesh(new THREE.IcosahedronGeometry(2,0),MAT(0x38512B));
+      cr.position.set(3.6,0.7,0.4);cr.scale.y=0.8;g.add(cr);
+      g.rotation.y=Math.random()*6.28;
+      put(g,5+i*5,(i?1:-1)*(4+Math.random()*4),0.9);
+    }
+
+    /* ---- THE DOZER. Built facing +Z, which is across the road at the pile ---- */
+    const yellow=MAT(0xE8B21C),yellowD=MAT(0xC9930F),steelD=MAT(0x3A3A3C),
+          trackC=MAT(0x24242A),glassD=MAT(0x18222E);
+    const dig={};
+    {
+      const g=new THREE.Group();
+      for(const sx of [-1,1]){
+        const tr=new THREE.Mesh(new THREE.BoxGeometry(0.95,1,5),trackC);
+        tr.position.set(sx*1.35,0.5,0);g.add(tr);
+        for(let i=0;i<5;i++){                     /* the rollers under it */
+          const rl=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,1.02,8),steelD);
+          rl.rotation.z=Math.PI/2;rl.position.set(sx*1.35,0.36,-1.8+i*0.9);g.add(rl);
+        }
+      }
+      const belly=new THREE.Mesh(new THREE.BoxGeometry(2.1,0.5,3.6),steelD);
+      belly.position.y=1.05;g.add(belly);
+      /* the house: everything above the slew ring turns as one */
+      const house=new THREE.Group();house.position.y=1.3;g.add(house);
+      const deck=new THREE.Mesh(new THREE.BoxGeometry(2.7,0.5,4.2),yellow);
+      deck.position.y=0.25;house.add(deck);
+      const eng=new THREE.Mesh(new THREE.BoxGeometry(2.5,1.1,1.9),yellow);
+      eng.position.set(0,1.05,-1.1);house.add(eng);
+      const cw=new THREE.Mesh(new THREE.BoxGeometry(2.6,1.3,0.8),yellowD);
+      cw.position.set(0,0.95,-2.1);house.add(cw);   /* counterweight */
+      const cab=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.9,1.8),yellow);
+      cab.position.set(-0.55,1.45,0.6);house.add(cab);
+      const windscreen=new THREE.Mesh(new THREE.BoxGeometry(1.32,1.5,0.08),glassD);
+      windscreen.position.set(-0.55,1.5,1.48);house.add(windscreen);
+      const sideGlass=new THREE.Mesh(new THREE.BoxGeometry(0.08,1.4,1.5),glassD);
+      sideGlass.position.set(-1.32,1.5,0.6);house.add(sideGlass);
+      /* the amber beacon every machine on a Nepali road carries */
+      const beacon=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.3,8),
+        lampAtNight(new THREE.MeshBasicMaterial({color:0xE07A18}),0xE07A18,0xFFB63A));
+      beacon.position.set(-0.55,2.5,0.6);house.add(beacon);
+      const beaconGlow=lampGlow(2.6,0.9,0xFF9A20);
+      beaconGlow.position.copy(beacon.position);house.add(beaconGlow);
+      /* work lights, pointed at whatever it is digging */
+      const wl=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.26,0.12),
+        lampAtNight(new THREE.MeshBasicMaterial({color:0xDCD3B8}),0xDCD3B8,0xFFFCEE));
+      wl.position.set(0.3,2.3,0.5);house.add(wl);
+      const wlGlow=lampGlow(2.6,0.9);wlGlow.position.set(0.3,2.3,0.62);house.add(wlGlow);
+      const wlBeam=lampBeam(12,2.6,0.42);wlBeam.position.set(0.3,2.25,0.6);
+      wlBeam.rotation.x=-Math.PI/2+0.42;             /* aimed down at the pile */
+      house.add(wlBeam);
+
+      /* boom → arm → bucket, each hung off the end of the one before */
+      const boom=new THREE.Group();boom.position.set(0.55,0.6,1.5);house.add(boom);
+      const bm=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.6,4.6),yellow);
+      bm.position.z=2.3;boom.add(bm);
+      const arm=new THREE.Group();arm.position.z=4.6;boom.add(arm);
+      const am=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.48,3.4),yellowD);
+      am.position.z=1.7;arm.add(am);
+      const buck=new THREE.Group();buck.position.z=3.4;arm.add(buck);
+      const bk=new THREE.Mesh(new THREE.BoxGeometry(1.35,1,1.1),steelD);
+      bk.position.set(0,-0.4,0.45);buck.add(bk);
+      for(let i=0;i<4;i++){                          /* teeth */
+        const t=new THREE.Mesh(new THREE.ConeGeometry(0.11,0.42,4),MAT(0x8E8A82));
+        t.rotation.x=Math.PI/2;t.position.set(-0.5+i*0.33,-0.72,1.1);buck.add(t);
+      }
+      /* the boom ram, as one plain cylinder — nobody counts the pins at this size */
+      const ram=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,2,6),steelD);
+      ram.rotation.x=Math.PI/2.6;ram.position.set(0.55,0.95,1.5);house.add(ram);
+      dig.g=g;dig.house=house;dig.boom=boom;dig.arm=arm;dig.buck=buck;
+      dig.beaconGlow=beaconGlow;dig.beacon=beacon;
+      /* it stands up on the debris it is clearing and reaches out over the road,
+         pulling the mud back off the carriageway, which is how it is done */
+      g.scale.setScalar(1.25);
+      put(g,7.4,-1.5,1.5);
+      g.rotation.y=Math.atan2(SS.x,SS.z)+Math.PI;    /* +Z of the group faces our side */
+      dig.home=g.rotation.y;
+    }
+    /* dust off the bucket when it tips */
+    const dust=[];
+    for(let i=0;i<5;i++){
+      const d=new THREE.Mesh(new THREE.SphereGeometry(0.5,7,6),
+        new THREE.MeshBasicMaterial({color:0xB9A88E,transparent:true,
+          opacity:0,depthWrite:false}));
+      dust.push(d);scene.add(d);
+    }
+
+    /* the man with the red flag, waving one side through at a time */
+    const flagman=makePerson(0xE8842F,0.95);
+    put(flagman.who,-4.6,7.5,0);
+    flagman.who.lookAt(SP.x,flagman.who.position.y,SP.z);
+    const flagStick=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,1.5,5),MAT(0xB9A472));
+    flagStick.rotation.x=Math.PI/2;flagStick.position.z=0.7;flagman.arm.add(flagStick);
+    const flagCloth=new THREE.Mesh(new THREE.PlaneGeometry(0.85,0.6),
+      new THREE.MeshBasicMaterial({color:0xD8382A,side:THREE.DoubleSide}));
+    flagCloth.position.set(0.42,0,1.35);flagman.arm.add(flagCloth);
+    /* two on the machine's side with shovels, and two more just watching */
+    const crew=[];
+    for(let i=0;i<2;i++){
+      const w=makePerson([0xE8842F,0xF0C21C][i],0.95);
+      put(w.who,4.6+i*2.2,-6-i*2.4,0.5);
+      w.who.rotation.y=Math.atan2(SS.x,SS.z)+Math.PI;
+      const sh=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,1.7,5),MAT(0x8A6A44));
+      sh.rotation.x=1.2;sh.position.set(0,-0.1,0.6);w.arm.add(sh);
+      const bl=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.05,0.44),MAT(0x9A9184));
+      bl.rotation.x=1.2;bl.position.set(0,-0.72,1.15);w.arm.add(bl);
+      crew.push({...w,ph:Math.random()*6.28,rate:0.9+Math.random()*0.4});
+    }
+    for(let i=0;i<3;i++){
+      const w=makePerson([0xB8232E,0x2B4880,0x2C6754][i],0.92);
+      put(w.who,-6.4-i*0.9,-2+i*2.6,0);
+      w.who.lookAt(SP.x+SS.x*8,w.who.position.y,SP.z+SS.z*8);
+      crew.push({...w,ph:Math.random()*6.28,rate:0.35+Math.random()*0.3});
+    }
+    /* somebody's bike, parked on the shoulder while they watch */
+    {
+      const b=motorbike(0x8C2A20);
+      put(b.g,-6.8,-8,0);
+      b.g.rotation.y=Math.atan2(SS.x,SS.z);
+    }
+
+    /* the warning board, and the branches they put out instead of cones */
+    {
+      const wt=tex((c,w,h)=>{
+        c.fillStyle='#F0C21C';c.fillRect(0,0,w,h);
+        for(let i=-h;i<w;i+=26){                    /* the hazard stripes */
+          c.fillStyle='#1A1712';c.beginPath();
+          c.moveTo(i,h);c.lineTo(i+13,h);c.lineTo(i+13+h,0);c.lineTo(i+h,0);c.closePath();c.fill();
+        }
+        c.fillStyle='#F0C21C';c.fillRect(10,26,w-20,h-52);
+        c.fillStyle='#1A1712';c.textAlign='center';c.textBaseline='middle';
+        c.font='bold 50px sans-serif';c.fillText('पहिरो — बिस्तारै',w/2,h*0.44);
+        c.font='bold 24px sans-serif';c.fillText('LANDSLIDE · GO SLOW',w/2,h*0.71);
+      },420,160);
+      const bd=new THREE.Group();
+      const {at:wAt}=roadside((U-0.026+1)%1,-7.2);   /* clear of the distance pole */
+      const wBack=curve.getPointAt(((U-0.06)%1+1)%1);
+      facing(bd,wAt,wBack);
+      for(const sx of [-1.3,1.3]){
+        const post=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.11,3.4,6),MAT(0x8E8A82));
+        post.position.set(sx,1.7,0);bd.add(post);
+      }
+      const face=new THREE.Mesh(new THREE.PlaneGeometry(3.3,1.26),
+        dimAtNight(new THREE.MeshBasicMaterial({map:wt}),0.72));
+      face.position.set(0,2.9,0.07);bd.add(face);
+      scene.add(bd);
+      /* leafy branches laid across the closed lane, which is what actually
+         gets used out here */
+      for(let i=0;i<4;i++){
+        const br=new THREE.Group();
+        const st=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.09,1.9,5),MAT(0x5A4028));
+        st.rotation.z=Math.PI/2;br.add(st);
+        const lf=new THREE.Mesh(new THREE.IcosahedronGeometry(0.6,0),MAT(0x3E5C2C));
+        lf.position.x=0.9;lf.scale.set(1,0.5,1);br.add(lf);
+        br.rotation.y=Math.random()*6.28;
+        put(br,0.9+i*0.8,9.5-i*1.1,0.25);
+      }
+    }
+
+    /* the debris makes the good lane rough for a moment */
+    for(const off of [-0.006,0,0.006])
+      HOLES.push({d:((((U+off)*LEN0)%LEN0)+LEN0)%LEN0,jolt:0.075});
+
+    /* one cycle of the machine: swing in, dig, lift, swing out, tip, come back */
+    const seg=(x,a,b)=>Math.max(0,Math.min(1,(x-a)/(b-a)));
+    const ease=t=>t*t*(3-2*t);
+    SLIDE={dig,dust,crew,flagman,flagCloth,seg,ease,u:U,
+           at:dig.g.position.clone()};
+    WORKS.d=U*LEN0;WORKS.on=true;      /* the traffic on both sides now knows */
+  }
+
+  /* ---- STREET LIGHTS. Solar LED heads on their own poles, the kind that went
+     up along every highway bazaar in the last few years: a panel on top, a
+     battery box, and a cold white head on an arm over the road. They cluster
+     where there is something worth lighting and leave the ridges dark. ---- */
+  {
+    const steelL=MAT(0x9BA0A6),caseL=MAT(0x2E3238),panelL=MAT(0x162238),
+          boxL=MAT(0x6E737A);
+    const SPACE=34/LEN0;                       /* about thirty-odd metres apart */
+    const RUNS=LOW?[{u0:0.345,n:4},{u0:0.812,n:5}]
+                  :[{u0:0.335,n:6},{u0:0.806,n:7},{u0:0.128,n:4}];
+    for(const run of RUNS) for(let i=0;i<run.n;i++){
+      const u=(run.u0+i*SPACE)%1;
+      const {p,at}=roadside(u,-8);
+      const g=new THREE.Group();facing(g,at,p);   /* +Z points at the road */
+      const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.19,8.4,7),steelL);
+      pole.position.y=4.2;g.add(pole);
+      const arm=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.15,2.6),steelL);
+      arm.position.set(0,8.2,1.3);g.add(arm);
+      const head=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.24,1.3),caseL);
+      head.position.set(0,8.05,2.4);head.rotation.x=0.12;g.add(head);
+      const lens=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.06,1.1),
+        lampAtNight(new THREE.MeshBasicMaterial({color:0x6E7B88}),0x6E7B88,0xF2F8FF));
+      lens.position.set(0,7.9,2.4);lens.rotation.x=0.12;g.add(lens);
+      /* the panel it runs off, tilted south the way they all are */
+      const panel=new THREE.Mesh(new THREE.BoxGeometry(1.3,0.09,1.7),panelL);
+      panel.position.set(0,8.62,-0.5);panel.rotation.x=0.34;g.add(panel);
+      const batt=new THREE.Mesh(new THREE.BoxGeometry(0.44,0.7,0.5),boxL);
+      batt.position.set(0,6.4,-0.28);g.add(batt);
+      /* and what it throws: the head burning, a cone, and a pool on the tarmac */
+      const gl=lampGlow(3.4,0.85,0xDDEBFF);gl.position.set(0,7.85,2.4);g.add(gl);
+      const cone=new THREE.Mesh(new THREE.ConeGeometry(3.4,8.2,10,1,true),
+        ADD(beamTex,0xCFE2FF));
+      cone.material.side=THREE.DoubleSide;
+      cone.position.set(0,3.8,2.4);g.add(glowAtNight(cone,0.34));
+      const pool=new THREE.Mesh(new THREE.PlaneGeometry(11,8),ADD(glowTex,0xC6DCFF));
+      pool.rotation.x=-Math.PI/2;pool.position.set(0,0.09,2.6);
+      g.add(glowAtNight(pool,0.4));
+      scene.add(g);
+    }
+  }
+
+  /* ---- DISTANCE POLES — the green boards counting the destination down.
+     Each is painted for the ground it stands on, so the number drops as we
+     drive, and they are all repainted whenever the route changes or the sun
+     goes down. They stand on our own side of the road, facing back the way we
+     came, which is the only way you can read one on the approach. ---- */
+  {
+    const NPOLE=LOW?8:12;
+    const postMat=MAT(0x9A958A),capMat=MAT(0xC8342A);
+    const boards=[];
+    for(let k=0;k<NPOLE;k++){
+      let u=k/NPOLE;
+      /* nothing stands on the pul, and the gorge either side is no place for
+         a post either — shift those along until they are back on solid ground */
+      if(Math.abs(((u-BRIDGE_U+1.5)%1)-0.5)<0.05) u=(u+0.07)%1;
+      const {at}=roadside(u,-7.6);
+      const back=curve.getPointAt(((u-0.03)%1+1)%1);
+      const g=new THREE.Group();facing(g,at,back);
+      const post=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.13,4,7),postMat);
+      post.position.y=2;g.add(post);
+      const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.16,7),capMat);
+      cap.position.y=4.02;g.add(cap);
+      /* a canvas each, because each one carries a different number */
+      const cv=document.createElement('canvas');cv.width=512;cv.height=200;
+      const bt=new THREE.CanvasTexture(cv);
+      const face=new THREE.Mesh(new THREE.PlaneGeometry(2.7,1.06),
+        new THREE.MeshBasicMaterial({map:bt}));
+      face.position.set(0,3.3,0.06);g.add(face);
+      const rear=new THREE.Mesh(new THREE.BoxGeometry(2.74,1.1,0.08),MAT(0x6E6A62));
+      rear.position.set(0,3.3,0);g.add(rear);
+      scene.add(g);
+      boards.push({cv,tex:bt,u});
+    }
+    /* a road sign rounds: to the nearest 5 out here, to the kilometre close in */
+    const roundKm=v=>v>40?Math.round(v/5)*5:Math.max(1,Math.round(v));
+    function drawPole(cv,np,en,km){
+      const c=cv.getContext('2d'),w=cv.width,h=cv.height;
+      /* after dark it is the same board, only now it is throwing our own
+         headlights back at us — brighter, colder, and the paint has gone flat */
+      const dark=nightPhase;
+      c.fillStyle=dark?'#0B4A28':'#0E7A3C';c.fillRect(0,0,w,h);
+      c.strokeStyle=dark?'#EAFBF0':'#F2FBF5';c.lineWidth=7;
+      c.strokeRect(9,9,w-18,h-18);
+      c.textBaseline='middle';
+      const ink=dark?'#F4FFF8':'#F4FBF6';
+      c.shadowColor=dark?'rgba(210,255,228,.75)':'transparent';
+      c.shadowBlur=dark?16:0;
+      /* the Nepali name across the top, as big as it will go */
+      c.textAlign='center';c.fillStyle=ink;
+      let fs=64;c.font='bold '+fs+'px sans-serif';
+      while(c.measureText(np).width>w-70&&fs>26){fs-=2;c.font='bold '+fs+'px sans-serif';}
+      c.fillText(np,w/2,h*0.33);
+      /* the English name to the left, the distance to the right */
+      c.textAlign='left';
+      fs=40;c.font='bold '+fs+'px sans-serif';
+      while(c.measureText(en).width>w*0.56&&fs>18){fs-=2;c.font='bold '+fs+'px sans-serif';}
+      c.fillText(en,34,h*0.73);
+      c.textAlign='right';
+      c.fillStyle=dark?'#FFF3C4':'#FFE066';
+      c.shadowColor=dark?'rgba(255,226,140,.8)':'transparent';
+      c.font='bold 46px sans-serif';
+      c.fillText(km+' km',w-34,h*0.72);
+      c.shadowBlur=0;
+    }
+    repaintPoles=function(){
+      const total=DEST_KM[DEST]||220, np=DEST_NP[DEST]||DEST, en=DEST.toUpperCase();
+      for(const b of boards){
+        drawPole(b.cv,np,en,roundKm(total*(1-b.u)));
+        b.tex.needsUpdate=true;
+      }
+    };
+    repaintPoles();
+  }
+}
+
+/* ---------- THE AEROPLANE. Everything that flies into Kathmandu comes in over
+   these ridges, so there is nearly always one up there. It is built nose-first
+   along +Z, which is the way lookAt() points a thing, and it keeps its own
+   materials with the fog off — it flies above the haze, not through it. ---------- */
+let plane=null,planeBank=null,navLights=[],trailPuffs=[];
+{
+  const F=(c)=>new THREE.MeshPhongMaterial({color:c,flatShading:true,shininess:0,fog:false});
+  const skin=F(0xEDEBE4),tail=F(0xC8342A),dark=F(0x2A3444),eng=F(0xB9BDC2);
+  plane=new THREE.Group();
+  planeBank=new THREE.Group();plane.add(planeBank);   /* so it can lean into a turn */
+
+  const fus=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.25,22,9),skin);
+  fus.rotation.x=Math.PI/2;planeBank.add(fus);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(1.4,3.6,9),skin);
+  nose.rotation.x=Math.PI/2;nose.position.z=12.8;planeBank.add(nose);
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(1.25,5,9),skin);
+  cone.rotation.x=-Math.PI/2;cone.position.z=-13.4;planeBank.add(cone);
+  /* the window line, as one dark stripe — anything finer is invisible up there */
+  const strip=new THREE.Mesh(new THREE.BoxGeometry(2.84,0.5,17),dark);
+  strip.position.set(0,0.5,0.5);planeBank.add(strip);
+
+  const wing=new THREE.Mesh(new THREE.BoxGeometry(34,0.45,5),skin);
+  wing.position.set(0,-0.5,-0.6);planeBank.add(wing);
+  const stab=new THREE.Mesh(new THREE.BoxGeometry(12.5,0.4,2.8),skin);
+  stab.position.set(0,0.5,-11.6);planeBank.add(stab);
+  const fin=new THREE.Mesh(new THREE.BoxGeometry(0.42,5.4,4.4),tail);
+  fin.position.set(0,3,-11.8);planeBank.add(fin);
+  for(const sx of [-1,1]){
+    const pod=new THREE.Mesh(new THREE.CylinderGeometry(1.15,1,4.6,9),eng);
+    pod.rotation.x=Math.PI/2;pod.position.set(sx*8.4,-1.5,0.6);planeBank.add(pod);
+    const pylon=new THREE.Mesh(new THREE.BoxGeometry(0.4,1.2,2.4),skin);
+    pylon.position.set(sx*8.4,-0.9,0.2);planeBank.add(pylon);
+  }
+
+  /* Navigation lights: red to port, green to starboard, and the white strobe on
+     the tail. They burn by day too, you simply cannot see them — so the glow
+     comes up with nightT while the beacons themselves keep blinking regardless. */
+  const nav=(sx,col,z,y)=>{
+    const b=new THREE.Mesh(new THREE.SphereGeometry(0.42,7,6),
+      new THREE.MeshBasicMaterial({color:col,fog:false}));
+    b.position.set(sx,y===undefined?-0.4:y,z===undefined?-0.6:z);planeBank.add(b);
+    const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:col,
+      transparent:true,opacity:0,blending:THREE.AdditiveBlending,
+      depthWrite:false,fog:false}));
+    gl.scale.set(9,9,1);gl.position.copy(b.position);planeBank.add(gl);
+    navLights.push({b,gl,col});
+    return {b,gl};
+  };
+  nav(-17.2,0xFF2E1A);nav(17.2,0x2EFF66);nav(0,0xFFFFFF,-12.4,4.6);
+  navLights[0].kind='steady';navLights[1].kind='steady';navLights[2].kind='strobe';
+
+  /* the contrail, as a string of puffs rigid behind it — it flies straight
+     enough that nobody will ever know the difference */
+  for(let i=0;i<20;i++){
+    const s=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xFFFFFF,
+      transparent:true,opacity:0,depthWrite:false,fog:false}));
+    const k=i/19;
+    s.scale.setScalar(10+k*24);          /* overlapping, or it reads as a dotted line */
+    s.position.set(0,-0.6,-15-i*9);
+    planeBank.add(s);
+    trailPuffs.push({s,max:0.4*(1-k*0.82)});
+  }
+  plane.scale.setScalar(1.4);           /* it is a long way up; give it some size */
+  scene.add(plane);
+}
+const FLIGHT={t:0,dur:1,from:new THREE.Vector3(),to:new THREE.Vector3(),bank:0};
+/* Not straight overhead — a track that passes off to one side, so it comes up
+   over the ridges, crosses the top of the frame and drops away again, instead
+   of spending the whole flight somewhere above the roof of the micro. */
+function newFlight(){
+  const a=Math.random()*Math.PI*2;
+  const dx=Math.cos(a),dz=Math.sin(a);           /* the way it is heading */
+  const off=(Math.random()<0.5?-1:1)*(880+Math.random()*420);
+  const half=1500,alt=330+Math.random()*110;
+  FLIGHT.from.set(-dz*off-dx*half,alt,dx*off-dz*half);
+  FLIGHT.to.set(-dz*off+dx*half,alt+(Math.random()-0.5)*50,dx*off+dz*half);
+  FLIGHT.t=-Math.random()*25;            /* a gap of empty sky between flights */
+  FLIGHT.dur=80+Math.random()*55;
+  FLIGHT.bank=(Math.random()-0.5)*0.22;
+}
+newFlight();
+/* The opening shot needs something moving in it, and a dot of aeroplane over
+   the ridge is the cheapest thing there is to look at. Rather than trust the
+   dice, the first flight is aimed at the frame itself: unproject a point in the
+   upper right of the view the scene actually opens on, put the aeroplane out
+   along that ray, and fly it across. Whatever shape the window is, there is one
+   up there when the lights come on. */
+let aimed=false;
+function aimOpeningFlight(){
+  camera.updateMatrixWorld();
+  /* The lens is still opening as the shot settles, so aim through the framing
+     it is going to have rather than the one it has — otherwise the ray lands
+     several degrees low and the aeroplane ends up behind a ridge. */
+  const fov0=camera.fov;
+  camera.fov=Math.min(74,56+parked*13+portrait*9);camera.updateProjectionMatrix();
+  /* clear sky above the ridge line, left of the route pill and below the
+     keyboard hint — and a ray that leaves the frame above the hills cannot be
+     occluded by them at any distance along it */
+  const ray=new THREE.Vector3(0.30,0.85,0.92).unproject(camera).sub(camera.position).normalize();
+  camera.fov=fov0;camera.updateProjectionMatrix();
+  const at=camera.position.clone().addScaledVector(ray,800);
+  const flat=new THREE.Vector3(ray.x,0,ray.z).normalize();
+  const side=new THREE.Vector3(-flat.z,0,flat.x);   /* it crosses the view, not along it */
+  FLIGHT.dur=105;FLIGHT.bank=0.09;
+  FLIGHT.from.copy(at).addScaledVector(side,-1500);
+  FLIGHT.to.copy(at).addScaledVector(side,1500).setY(at.y+24);
+  FLIGHT.t=FLIGHT.dur*0.5;                          /* dead centre of its own track */
+  aimed=true;
+}
+function flyPlane(dt,now){
+  if(!aimed){plane.visible=false;return;}           /* held back for the opening */
+  FLIGHT.t+=dt;
+  if(FLIGHT.t>=FLIGHT.dur) newFlight();
+  const k=FLIGHT.t/FLIGHT.dur;
+  plane.visible=k>=0;
+  if(k<0) return;
+  plane.position.lerpVectors(FLIGHT.from,FLIGHT.to,k);
+  plane.lookAt(FLIGHT.to);                          /* built nose-first along +Z */
+  planeBank.rotation.z=FLIGHT.bank+Math.sin(now*0.0004)*0.05;
+  const s=now*0.001;
+  for(const n of navLights){
+    const on=n.kind==='strobe'?((s%1.35)<0.09):((s%2.2)<1.5);
+    n.b.visible=on;
+    n.gl.material.opacity=on?nightT*(n.kind==='strobe'?1:0.85):0;
+    n.gl.visible=on&&nightT>0.02;
+  }
+  /* contrails only show in daylight */
+  for(const t of trailPuffs){
+    t.s.material.opacity=t.max*(1-nightT);
+    t.s.visible=nightT<0.96;
   }
 }
 
@@ -1282,13 +2729,14 @@ const kiteTex=tex((c,w,h)=>{
   c.beginPath();c.moveTo(64,132);c.quadraticCurveTo(84,168,58,208);c.stroke();
 },128,224);
 const kites=[];
-for(let i=0;i<11;i++){
+for(let i=0;i<(LOW?6:11);i++){
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:kiteTex,transparent:true,depthWrite:false,fog:false}));
   s.scale.set(7,12,1);
   s.userData={a:Math.random()*6.28,r:150+Math.random()*260,y:120+Math.random()*130,
               sp:0.04+Math.random()*0.07,ph:Math.random()*6.28};
   kites.push(s);scene.add(s);
 }
+let sunSprite=null,moonSprite=null,starField=null;
 {
   const st=tex((c,w,h)=>{
     const g=c.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);
@@ -1296,6 +2744,47 @@ for(let i=0;i<11;i++){
     g.addColorStop(1,'rgba(255,146,78,0)');c.fillStyle=g;c.fillRect(0,0,w,h);},256,256);
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:st,transparent:true,depthWrite:false,fog:false}));
   s.scale.set(420,420,1);s.position.set(-980,150,-680);scene.add(s);
+  sunSprite=s;
+
+  /* ---- and what takes its place. Dashain falls on the bright fortnight, so
+     the moon over these hills is nearly full and does most of the lighting. ---- */
+  const mt=tex((c,w,h)=>{
+    const g=c.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);
+    g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.26,'rgba(240,246,255,0)');
+    g.addColorStop(.27,'rgba(246,250,255,.98)');g.addColorStop(.4,'rgba(226,238,255,.9)');
+    g.addColorStop(.42,'rgba(190,214,255,.34)');g.addColorStop(1,'rgba(150,186,255,0)');
+    c.fillStyle=g;c.fillRect(0,0,w,h);
+    /* a few maria, so it is a moon and not a bulb */
+    c.globalCompositeOperation='destination-out';
+    c.fillStyle='rgba(0,0,0,.16)';
+    for(const m of [[.44,.42,.055],[.56,.53,.04],[.5,.62,.032],[.6,.4,.026]]){
+      c.beginPath();c.arc(w*m[0],h*m[1],w*m[2],0,6.29);c.fill();
+    }
+    c.globalCompositeOperation='source-over';
+  },256,256);
+  const mo=new THREE.Sprite(new THREE.SpriteMaterial({map:mt,transparent:true,
+    opacity:0,depthWrite:false,fog:false}));
+  /* high enough to clear the ridge bands — any lower and it never rises */
+  mo.scale.set(340,340,1);mo.position.set(1180,860,-1180);
+  scene.add(mo);moonSprite=mo;
+
+  /* stars, on a shell outside the ridge bands, which keep the low ones hidden */
+  const N=LOW?340:720,pts=[];
+  for(let i=0;i<N;i++){
+    const a=Math.random()*Math.PI*2,el=0.08+Math.random()*1.05;
+    const r=1900,y=Math.sin(el)*1450+120;
+    pts.push(Math.cos(a)*r,y,Math.sin(a)*r);
+  }
+  const sg=new THREE.BufferGeometry();
+  sg.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+  const dot=tex((c,w,h)=>{
+    const g=c.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);
+    g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.45,'rgba(214,230,255,.6)');
+    g.addColorStop(1,'rgba(190,214,255,0)');c.fillStyle=g;c.fillRect(0,0,w,h);},32,32);
+  starField=new THREE.Points(sg,new THREE.PointsMaterial({map:dot,size:26,
+    transparent:true,opacity:0,depthWrite:false,fog:false,
+    blending:THREE.AdditiveBlending,sizeAttenuation:true}));
+  starField.visible=false;scene.add(starField);
 }
 
 const slow=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1313,44 +2802,177 @@ const CRUISE=slow?2:19,BRAKE=95;      /* BRAKE = curve units spent slowing down 
     if(u===POTHOLE_US[0]) return 'hole';
     return 'chiya';
   };
+  const OFF={hole:LANE,sauch:9.5,bridge:0,thakali:13};
   mapPois=POIS.map(poi=>{
-    const off=poi.kind==='hole'?LANE:(poi.kind==='sauch'?9.5:12);
+    const kind=poi.kind||kindOf(poi.u);
+    const off=(kind in OFF)?OFF[kind]:12;
     const {at}=roadside(poi.u,off);
-    return {x:at.x,z:at.z,kind:poi.kind||kindOf(poi.u)};
+    return {x:at.x,z:at.z,kind};
   });
+  /* the khola, so the radar shows what the pul is there for */
+  const riv=[];
+  for(let i=0;i<=64;i++){
+    const a=-RIV_RUN+2*RIV_RUN*i/64;
+    const wig=Math.sin(a*0.0115)*14+Math.sin(a*0.026)*6;
+    riv.push([BR_P.x+BR_A.x*a+BR_T.x*wig,BR_P.z+BR_A.z*a+BR_T.z*wig]);
+  }
+  mapRiver=riv;
 }
 hasScene=true;                       /* the banner sticker can follow the real micro now */
 /* the scene opens parked at a tea stop — press play and it pulls away */
 let dist=PASALS.length?PASALS[0].u*LEN0:0;
-let last=performance.now(),vis=true,speed=0,parked=1;
+let last=performance.now(),vis=true,speed=0,parked=1,frames=0;
 const camPos=new THREE.Vector3(),tmp=new THREE.Vector3(),look=new THREE.Vector3(),
-      sideV=new THREE.Vector3();
+      sideV=new THREE.Vector3(),tanV=new THREE.Vector3();
 document.addEventListener('visibilitychange',()=>{vis=!document.hidden;last=performance.now();});
 
-/* distance still to run before the next tea stop */
-const STOPS=PASALS.map(t=>t.u*LEN).sort((a,b)=>a-b);
-function nextStop(from){
-  let best=Infinity,at=0;
-  for(const s of STOPS){
-    const gap=((s-from)%LEN+LEN)%LEN;
-    if(gap<best){best=gap;at=s;}
-  }
-  return {gap:best,at};
-}
-function pasalAt(d){                   /* the stop we are parked at, for the camera */
+/* The handbrake goes on wherever the music stops — but if we happen to have
+   pulled up beside a chiya pasal, a khana ghar or a sauchalaya, that is a
+   proper halt: the door slides open and everyone gets down. */
+const STOP_R=34;                       /* how close counts as "beside" a stop */
+function stopNear(d){
   let best=Infinity,found=null;
   for(const t of PASALS){
-    const gap=Math.abs(((t.u*LEN-d)%LEN+LEN)%LEN);
+    const gap=((t.u*LEN-d)%LEN+LEN)%LEN;
     const g=Math.min(gap,LEN-gap);
     if(g<best){best=g;found=t;}
   }
-  return found;
+  return best<=STOP_R?found:null;
+}
+let stopHere=null;                     /* the stop we are pulled up beside */
+let wantOut=false,stopT=0,doorOpen=0,boarding=false;
+
+/* Work out the walk each passenger will take, in the micro's own coordinates:
+   out of the sliding door, and then over to whatever we stopped for. The door
+   is on the kerb side, so when the stop is across the road they go round the
+   back of the micro rather than through it — and back the same way. */
+function seatRiders(stop){
+  micro.updateMatrixWorld();
+  const tan=curve.getTangentAt(dist/LEN);
+  const n=RIDERS.length;
+  for(let i=0;i<n;i++){
+    const r=RIDERS[i];
+    const w=micro.position.clone().lerp(stop.pos,0.72+((i%3)-1)*0.14);
+    w.addScaledVector(tan,(i-(n-1)/2)*1.7);
+    w.y=terrainY(w.x,w.z);
+    r.look.copy(stop.pos);r.look.y=w.y;
+    micro.worldToLocal(r.look);
+    const spot=micro.worldToLocal(w);
+    r.spot.copy(spot);
+
+    const path=[r.seat.clone(),P_IN.clone(),P_OUT.clone()];
+    if(spot.x>0.6){                    /* it is across the road — round the tail */
+      const gy=P_OUT.y;
+      path.push(new THREE.Vector3(-2.5,gy,5.2),
+                new THREE.Vector3(0,gy,5.9+(i%2)*0.5),
+                new THREE.Vector3(2.5,gy,5.2));
+    }
+    path.push(spot.clone());
+    r.path=path;r.cum=[0];
+    for(let k=1;k<path.length;k++) r.cum.push(r.cum[k-1]+path[k].distanceTo(path[k-1]));
+    r.len=r.cum[r.cum.length-1];
+    r.dur=Math.min(5,Math.max(1.8,r.len/2.5));   /* an even pace, however far it is */
+  }
+}
+/* where along that walk they are, at 0..1 of the way */
+function pathAt(r,x,out){
+  if(!r.path||r.path.length<2||r.len<1e-4) return out.copy(r.seat);
+  const d=x*r.len;
+  for(let k=1;k<r.path.length;k++){
+    if(d<=r.cum[k]||k===r.path.length-1){
+      const seg=r.cum[k]-r.cum[k-1];
+      return out.copy(r.path[k-1]).lerp(r.path[k],seg>1e-6?(d-r.cum[k-1])/seg:1);
+    }
+  }
+  return out.copy(r.path[r.path.length-1]);
 }
 
-function twinkle(list,now){
+/* seat → doorway → down the step → out to the shop, and the same in reverse.
+   Returns true while anyone is out or the door is still open: the micro waits. */
+const rv=new THREE.Vector3(),rw=new THREE.Vector3();
+function ridersMove(dt,now){
+  const s=now*0.001;
+  let busy=false;
+  for(const r of RIDERS){
+    /* one door between the lot of them, so they take it in turn */
+    const order=wantOut?r.order:(RIDERS.length-1-r.order);
+    const go=stopT>(wantOut?0.55+order*0.5:0.25+order*0.26);
+    const target=wantOut?(go?1:0):(go?0:1);
+    const rate=dt/(r.dur*(wantOut?1:0.62));      /* they hurry back on */
+    r.x=r.x<target?Math.min(target,r.x+rate):Math.max(target,r.x-rate);
+    if(r.x>0.05) busy=true;
+    r.who.visible=r.x>0.002||doorOpen>0.02;
+    if(!r.who.visible) continue;
+
+    pathAt(r,r.x,rv);
+    rw.subVectors(rv,r.who.position);
+    const moved=rw.length(),pace=Math.min(1,moved/Math.max(dt,1e-4)/1.7);
+    if(moved>0.0015) r.face=Math.atan2(rw.x,rw.z);
+    else if(r.x>0.95) r.face=Math.atan2(r.look.x-rv.x,r.look.z-rv.z);
+    else if(r.x<0.05) r.face=Math.PI;
+    r.who.position.copy(rv);
+    const da=((r.face-r.who.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
+    r.who.rotation.y+=da*Math.min(1,dt*7);
+
+    if(pace>0.05){                          /* walking: swing an arm, and bob */
+      r.arm.rotation.x=Math.sin(s*7.4+r.ph)*0.8*pace;
+      r.head.rotation.x=0;
+      r.who.position.y+=Math.abs(Math.sin(s*7.4+r.ph))*0.07*pace;
+      r.mouth.scale.set(1.3,0.45,0.4);
+    }else{                                  /* stood about with a glass of tea */
+      const c=(s*r.rate+r.ph/6.28)%1;
+      const lift=c<0.42?c/0.42:(c<0.62?1:Math.max(0,1-(c-0.62)/0.38));
+      const e=lift*lift*(3-2*lift);
+      r.arm.rotation.x=-e*1.2;r.head.rotation.x=-e*0.34;
+      r.mouth.scale.set(1.3-e*0.5,0.45+e*1.5,0.4);
+    }
+    const blink=(s%r.blink)<0.13?0.12:1;
+    for(const ey of r.eyes) ey.scale.y=blink;
+  }
+  /* the door leads them out and waits for the last one back in */
+  const want=((wantOut&&stopT>0.25)||busy)?1:0;
+  doorOpen=want>doorOpen?Math.min(1,doorOpen+dt*1.15):Math.max(0,doorOpen-dt*1.15);
+  if(microDoor){
+    microDoor.position.z=doorOpen*2.02;
+    microDoor.position.x=-1.70-doorOpen*0.17;
+  }
+  return busy||doorOpen>0.02;
+}
+
+/* ---------- SUNDOWN. One dial: the sky, the three lights, the ridge bands,
+   every flat colour that would otherwise blaze, every lamp, and every beam. ---- */
+function applySky(t){
+  const e=t*t*(3-2*t);
+  scene.fog.color.copy(FOG_D).lerp(FOG_N,e);
+  scene.fog.near=150-e*62;scene.fog.far=1150-e*290;
+  hemi.color.copy(HEMI_SD).lerp(HEMI_SN,e);
+  hemi.groundColor.copy(HEMI_GD).lerp(HEMI_GN,e);
+  hemi.intensity=0.9-e*0.58;
+  sun.color.copy(SUN_D).lerp(SUN_N,e);
+  sun.intensity=1.3-e*0.94;              /* what is left is the moon on the hills */
+  sun.position.copy(SUN_POS).lerp(MOON_POS,e);       /* the light comes round with it */
+  rim.color.copy(RIM_D).lerp(RIM_N,e);
+  rim.intensity=0.42-e*0.2;
+  for(const b of skyBands) b.mat.color.copy(b.day).lerp(b.night,e);
+  for(const d of dimList) d.mat.color.copy(d.base).multiplyScalar(1-(1-d.f)*e);
+  for(const l of lampList) l.mat.color.copy(l.day).lerp(l.night,e);
+  for(const g of glowList){g.obj.material.opacity=g.max*e;g.obj.visible=e>0.012;}
+  if(sunSprite){sunSprite.material.opacity=1-e;sunSprite.visible=e<0.99;}
+  if(moonSprite){moonSprite.material.opacity=e;moonSprite.visible=e>0.01;}
+  if(starField){starField.material.opacity=e*0.95;starField.visible=e>0.01;}
+}
+/* the things that switch rather than fade, done once as we cross over */
+function nightFlip(on){
+  nightPhase=on;
+  for(const s of swapList){s.mat.map=on?s.night:s.day;s.mat.needsUpdate=true;}
+  for(const k of kites) k.visible=!on;               /* nobody flies a kite at night */
+  if(repaintPoles) repaintPoles();
+}
+
+function twinkle(list,now,boost){
   for(const b of list){
     const u=b.userData;
-    const k=0.42+0.58*Math.max(0,Math.sin(now*0.0035+u.ph));
+    const k=(0.42+0.58*Math.max(0,Math.sin(now*0.0035+u.ph)))*boost;
     u.mat.color.copy(u.base).multiplyScalar(k);
   }
 }
@@ -1388,10 +3010,66 @@ function herd(now){
   }
 }
 
+/* ---------- THE PAHIRO. One pass of the machine: swing in over the pile, drop
+   the boom, curl the bucket through the mud, lift, slew away, tip it off the
+   carriageway, come back for the next one. The crew dig, the flagman waves us
+   down, and the beacon goes round whatever the hour. ---------- */
+function pahiro(dt,now){
+  if(!SLIDE) return;
+  const {dig,dust,crew,flagman,flagCloth,seg,ease}=SLIDE;
+  const s=now*0.001, c=(s/8.5)%1;
+
+  /* slewing: 0 sat over the pile, 1 swung away to tip */
+  const swing=ease(seg(c,0.46,0.66))-ease(seg(c,0.86,1));
+  dig.house.rotation.y=-0.5+swing*1.25;
+  /* the boom drops into the pile, then picks the load up */
+  const down=ease(seg(c,0.02,0.2))-ease(seg(c,0.34,0.46));
+  dig.boom.rotation.x=-0.72+down*0.5;
+  dig.arm.rotation.x=0.95-down*0.28;
+  /* and the bucket curls through it, and tips out at the far end of the swing */
+  const curl=ease(seg(c,0.16,0.36))-ease(seg(c,0.68,0.8));
+  dig.buck.rotation.x=0.25-curl*1.6;
+  /* the whole machine rocks on its tracks as it works */
+  dig.g.rotation.z=Math.sin(c*Math.PI*2)*0.017+down*0.02;
+
+  /* the beacon, going round */
+  const beat=(s*1.6)%1;
+  const lit=0.35+0.65*Math.pow(Math.max(0,Math.sin(beat*Math.PI)),6);
+  dig.beaconGlow.material.opacity=0.9*nightT*lit+0.12*lit*(1-nightT);
+  dig.beaconGlow.visible=lit>0.14;
+
+  /* dust off the load as it tips */
+  const tip=seg(c,0.7,0.86);
+  dig.buck.updateWorldMatrix(true,false);
+  for(let i=0;i<dust.length;i++){
+    const d=dust[i],k=(tip+i*0.13)%1;
+    if(tip<=0.001||tip>=0.999){d.visible=false;continue;}
+    d.visible=true;
+    d.position.copy(SLIDE.at);
+    d.position.y+=1.4+k*2.2;
+    d.position.x+=Math.sin(dig.home+dig.house.rotation.y)*(3+k*2.5)+(i-2)*0.5;
+    d.position.z+=Math.cos(dig.home+dig.house.rotation.y)*(3+k*2.5)+(i-2)*0.4;
+    d.scale.setScalar(0.7+k*2.4);
+    d.material.opacity=0.34*(1-k)*(1-k);
+  }
+
+  /* the flagman waves us down, everybody else digs or watches */
+  flagman.arm.rotation.x=-0.9+Math.sin(s*2.6)*0.55;
+  flagCloth.rotation.y=Math.sin(s*7)*0.5;
+  flagCloth.rotation.z=Math.sin(s*5.3)*0.3;
+  for(const w of crew){
+    const a=Math.sin(s*w.rate*2+w.ph);
+    w.arm.rotation.x=w.rate>0.7?(-0.4+a*0.8):(-0.15+a*0.12);
+    w.head.rotation.x=w.rate>0.7?a*0.16:0;
+    for(const ey of w.eyes) ey.scale.y=(s%3.4)<0.12?0.12:1;
+  }
+}
+
 /* prayer flags flutter, the linge ping swings */
 function culture(now){
   const s=now*0.001;
   for(const f of FLAGS) f.fl.rotation.z=0.3*Math.sin(s*2.2+f.ph);
+  if(gadhiFlag) gadhiFlag.rotation.y=Math.sin(s*1.1)*0.38+0.4;
   for(const sw of SWINGS){
     const a=0.75*Math.sin(s*sw.rate*2);
     sw.swing.rotation.x=a;
@@ -1440,34 +3118,45 @@ function frame(now){
      negative — JS % keeps the sign, and getPointAt() throws on a negative u. */
   const dt=Math.min(0.05,Math.max(0,(now-last)/1000));last=now;
 
+  /* ease into the dark rather than snapping — it should read as a sundown */
+  if(nightT!==nightWant){
+    nightT+=(nightWant-nightT)*Math.min(1,dt*1.5);
+    if(Math.abs(nightWant-nightT)<0.002) nightT=nightWant;
+  }
+  if(Math.abs(nightT-nightAt)>0.001){
+    applySky(nightT);nightAt=nightT;
+    if((nightT>0.5)!==nightPhase) nightFlip(nightT>0.5);
+  }
+
   kidsCross(dt,now);
 
-  /* What, if anything, demands a stop ahead?
-     Paused means tea; children in the road mean wait either way.
-     Capping speed at CRUISE*sqrt(gap/BRAKE) lands on the mark, not past it. */
+  /* Pause the tape and the micro stops dead, wherever it happens to be.
+     Children in the road are the one thing it slows down for: capping speed at
+     CRUISE*sqrt(gap/BRAKE) lands it on the mark rather than past it. */
   let gap=Infinity;
-  if(!driving) gap=nextStop(dist).gap;
   for(const c of CROSSINGS){
     if(!c.busy) continue;
     const g=((c.d-dist)%LEN+LEN)%LEN;
     if(g<gap&&g<240) gap=g;
   }
 
-  if(gap===Infinity){
+  if(!driving||boarding){
+    speed=0;                             /* handbrake — and held until all aboard */
+  }else if(gap===Infinity){
     speed=Math.min(CRUISE,speed+dt*CRUISE*0.7);
-  }else if(slow&&!driving){
-    dist=(dist+gap)%LEN;gap=0;speed=0;   /* reduced motion: just be there */
   }else{
     const cap=CRUISE*Math.sqrt(Math.max(0,gap)/BRAKE);
-    speed=driving?Math.min(Math.min(CRUISE,speed+dt*CRUISE*0.7),cap)
-                 :Math.min(speed,cap);
+    speed=Math.min(Math.min(CRUISE,speed+dt*CRUISE*0.7),cap);
   }
+  /* nobody drives through a pahiro at speed, and the flagman would not let us */
+  if(WORKS.on){
+    const wr=worksRel(dist);
+    if(wr>-48&&wr<32) speed=Math.min(speed,CRUISE*0.38);
+  }
+
   let step=speed*dt;
   if(gap!==Infinity&&step>=gap){step=gap;speed=0;}   /* land on the mark */
   dist=(dist+step)%LEN;
-
-  const atStop=!driving&&speed<0.15&&nextStop(dist).gap<0.5;
-  parked=atStop?Math.min(1,parked+dt*1.5):Math.max(0,parked-dt*2.4);
 
   /* tell the banner and the radar where we are */
   routeU=dist/LEN;routeMoving=speed>0.35;
@@ -1481,7 +3170,8 @@ function frame(now){
 
   const p=curve.getPointAt(t),hd=curve.getPointAt((t+HEAD)%1);
   /* hold our lane, and let the camera hold it too */
-  sideV.crossVectors(curve.getTangentAt(t),UP).normalize();
+  tanV.copy(curve.getTangentAt(t));
+  sideV.crossVectors(tanV,UP).normalize();
   const lx=sideV.x*LANE,lz=sideV.z*LANE;
   const idle=speed>0.4?Math.sin(now*0.011)*0.05:Math.sin(now*0.02)*0.012;
   /* potholes: a kick up and a roll as the wheels drop in */
@@ -1500,27 +3190,46 @@ function frame(now){
   micro.rotateY(Math.PI);
   micro.rotation.z+=Math.sin(now*0.0016)*0.012*moving+tilt*moving;
 
+  /* Are we pulled up beside somewhere worth getting down at? Held on through
+     boarding, so the camera stays wide until the last passenger is aboard. */
+  if(!driving&&speed===0) stopHere=stopNear(dist);
+  else if(driving&&!boarding) stopHere=null;
+  const nowWant=!!stopHere&&!driving;
+  if(nowWant!==wantOut){wantOut=nowWant;stopT=0;if(nowWant)seatRiders(stopHere);}
+  stopT+=dt;
+  boarding=ridersMove(dt,now);
+  parked=stopHere?Math.min(1,parked+dt*1.3):Math.max(0,parked-dt*2.0);
+
   const bk=curve.getPointAt((t-BACK+1)%1),lk=curve.getPointAt((t+AHEAD)%1);
-  camPos.set(bk.x+lx,bk.y+CAM_Y,bk.z+lz);
-  look.set(lk.x+lx,lk.y+LOOK_Y,lk.z+lz);
-  if(parked>0.001){                    /* parked: stand back and watch the tea shop */
-    const shop=pasalAt(dist);
-    if(shop){
-      const bk2=curve.getPointAt((t-BACK*2.7+1)%1);
-      const so=shop.sgn*6.5;           /* step toward the shop's shoulder */
-      tmp.set(bk2.x+sideV.x*so,bk2.y+CAM_Y+2.3,bk2.z+sideV.z*so);
-      camPos.lerp(tmp,parked);
-      tmp.copy(shop.lookAt);tmp.y+=2;
-      look.lerp(tmp,parked*0.85);
-    }
+  camPos.set(bk.x+lx,bk.y+CAM_Y+portrait*1.3,bk.z+lz);
+  look.set(lk.x+lx,lk.y+LOOK_Y+portrait*4.6,lk.z+lz);
+  if(parked>0.001&&stopHere){          /* pull right back, on the door side, and watch */
+    tmp.copy(micro.position).addScaledVector(sideV,-8.5-portrait*1.5)
+                            .addScaledVector(tanV,-20-portrait*9);
+    tmp.y=micro.position.y+8.5+portrait*2.4;
+    camPos.lerp(tmp,parked);
+    tmp.copy(micro.position).lerp(stopHere.pos,0.45);tmp.y+=2.2;
+    look.lerp(tmp,parked*0.9);
   }
   camera.position.lerp(camPos,slow?1:0.09);
   camera.lookAt(look);
+  /* half a second in, the camera has lerped into its opening framing, whether
+     that is parked at the pasal or already rolling — put an aeroplane in it */
+  if(!aimed&&++frames>30) aimOpeningFlight();
+  /* and widen the lens with it, so the whole stop is in frame */
+  const fov=Math.min(74,56+parked*13+portrait*9);
+  if(Math.abs(camera.fov-fov)>0.02){
+    camera.fov+=(fov-camera.fov)*Math.min(1,dt*3.2);camera.updateProjectionMatrix();
+  }
+  if(riverFlow) riverFlow.offset.y=(riverFlow.offset.y+dt*0.14)%1;
 
   for(const k of kites){const u=k.userData;u.a+=dt*u.sp*0.1;
     k.position.set(Math.cos(u.a)*u.r,u.y+Math.sin(now*0.0009+u.ph)*14,Math.sin(u.a)*u.r);}
-  sipTea(now);herd(now);culture(now);
-  twinkle(microLights,now);twinkle(villageLights,now);
+  flyPlane(dt,now);
+  sipTea(now);herd(now);culture(now);pahiro(dt,now);
+  /* the jhilimili and the village bulbs come up as everything else goes down */
+  const lit=1+nightT*0.55;
+  twinkle(microLights,now,lit);twinkle(villageLights,now,lit);
   renderer.render(scene,camera);
 }
 requestAnimationFrame(frame);
@@ -1607,6 +3316,43 @@ setDest(DEST);
 
 function warn(html){const w=$('warn');w.innerHTML=html;w.style.display=html?'block':'none';}
 
+/* ---- Autoplay. The tape is supposed to be rolling before you touch anything,
+   but a browser will only autoplay sound for a site it thinks you care about.
+   So: ask for it with sound, and if nothing is playing a moment later, mute and
+   try again — muted autoplay is always allowed. The first click, key or tap
+   after that is the gesture the browser was waiting for, so the sound comes up
+   then, by itself. ---- */
+let hushed=false,triedMute=false,autoT=null;
+function notice(){
+  warn(hushed?'The tape is rolling, muted — browsers will not start sound on '
+             +'their own. <code>Click anywhere</code> for it.':'');
+  $('warn').className=hushed?'hush':'';
+}
+function tryAutoplay(){
+  clearTimeout(autoT);
+  autoT=setTimeout(()=>{
+    if(!ready||!player.getPlayerState) return;
+    if(player.getPlayerState()===YT.PlayerState.PLAYING) return;
+    if(triedMute){setPlay('idle');return;}      /* it will not roll at all; wait */
+    /* No sound without a gesture, then — so take the tape muted instead. That
+       has to be set when the player is built: muting one that is already up
+       does not buy back the permission. */
+    triedMute=true;hushed=true;notice();
+    make(true,true);
+  },1500);
+}
+function unhush(){
+  if(!hushed) return;
+  hushed=false;notice();
+  try{
+    player.unMute();
+    if(player.getVolume&&!player.getVolume()) player.setVolume(100);
+    if(player.getPlayerState()!==YT.PlayerState.PLAYING) player.playVideo();
+  }catch(err){}
+}
+for(const ev of ['pointerdown','keydown','touchstart'])
+  addEventListener(ev,unhush,{passive:true});
+
 const ICON_PLAY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.1L19 12 8 18.9z"/></svg>';
 const ICON_PAUSE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.3v14H7zm6.7 0H17v14h-3.3z"/></svg>';
 function setPlay(mode){                /* 'idle' | 'playing' | 'loading' */
@@ -1618,7 +3364,9 @@ function setPlay(mode){                /* 'idle' | 'playing' | 'loading' */
   $('disc').classList.toggle('spin',playing);
   vanRolling=playing;                  /* the sticker rides only while the tape runs */
   if(!hasScene) $('van').classList.toggle('rolling',playing);
-  driving=playing;                     /* and so does the micro out in the scene */
+  /* the micro follows the tape — but a tape that is merely loading does not
+     bring it to a halt, or every track change would jerk the scene */
+  if(mode!=='loading') driving=playing;
 }
 
 /* ============================================================
@@ -1648,8 +3396,11 @@ function pillPoint(d){
 
 function measurePlate(){
   const p=$('plate');plateW=p.clientWidth;plateH=p.clientHeight;
+  /* the horn and the radar park just above the player, whatever height it is */
+  document.documentElement.style.setProperty('--boardH',$('board').offsetHeight+'px');
 }
 addEventListener('resize',measurePlate);
+if(window.ResizeObserver) new ResizeObserver(measurePlate).observe($('board'));
 
 function vanFrame(now){
   requestAnimationFrame(vanFrame);
@@ -1676,7 +3427,8 @@ requestAnimationFrame(vanFrame);
 /* ============================================================
    RADAR — the loop, every stop on it, and where we are
    ============================================================ */
-const BLIP={chiya:'#3FBF6E',thakali:'#F0A21C',sauch:'#5FA8F0',hole:'#B9B2A6'};
+const BLIP={chiya:'#3FBF6E',thakali:'#F0A21C',sauch:'#5FA8F0',hole:'#B9B2A6',
+            bridge:'#E4DCC8'};
 const mapc=$('mapc');
 let mctx=null,mapFit=null;
 function fitMap(){
@@ -1702,6 +3454,15 @@ function drawMap(){
   const {s,cx,cy,size}=mapFit;
   const X=p=>p[0]*s+cx, Y=p=>p[1]*s+cy;
   mctx.clearRect(0,0,size,size);
+
+  /* the khola, under everything else */
+  if(mapRiver.length){
+    mctx.beginPath();
+    mctx.moveTo(X(mapRiver[0]),Y(mapRiver[0]));
+    for(let i=1;i<mapRiver.length;i++) mctx.lineTo(X(mapRiver[i]),Y(mapRiver[i]));
+    mctx.lineCap='round';
+    mctx.strokeStyle='rgba(95,168,240,.5)';mctx.lineWidth=4;mctx.stroke();
+  }
 
   /* the road */
   mctx.beginPath();
@@ -1851,7 +3612,7 @@ function skipBlocked(label){
    `autoplay` is set when we are rebuilding for a tape change: loadPlaylist()
    cannot be trusted to swap the queue (it leaves getPlaylist() empty and keeps
    playing the old video), so a tape change constructs a fresh player instead. */
-function make(autoplay){
+function make(autoplay,muted){
   if(player&&player.destroy){try{player.destroy();}catch(err){}}
   const wrap=$('ytwrap');
   wrap.innerHTML='<div id="ytplayer"></div>';
@@ -1859,6 +3620,7 @@ function make(autoplay){
   const vars={listType:'playlist',list:pickList(tape),playsinline:1,controls:0,
               index:Math.floor(Math.random()*24)};   /* start somewhere different */
   if(autoplay) vars.autoplay=1;
+  if(muted) vars.mute=1;
   if(!LOCAL) vars.origin=location.origin;
   player=new YT.Player('ytplayer',{
     height:'180',width:'320',playerVars:vars,
@@ -1866,12 +3628,17 @@ function make(autoplay){
       onReady:()=>{
         ready=true;player.setShuffle(true);startPoll();paint();
         setPlay(autoplay?'loading':'idle');
-        if(!LOCAL) warn('');
-        if(autoplay) player.playVideo();
+        if(!LOCAL) notice();
+        if(autoplay){
+          firstPlay=false;                 /* the tape already picked its own track */
+          player.playVideo();
+          tryAutoplay();                   /* and mute rather than not play at all */
+        }
       },
       onStateChange:e=>{
         if(e.data===YT.PlayerState.PLAYING){
-          setPlay('playing');paint();warn('');
+          setPlay('playing');paint();notice();
+          clearTimeout(autoT);
           skips=0;clearTimeout(skipT);
         }
         else if(e.data===YT.PlayerState.PAUSED){setPlay('idle');}
@@ -1894,7 +3661,7 @@ setPlay('loading');
   s.onerror=()=>{setPlay('idle');
     warn('Could not reach the YouTube API script.');};
   document.head.appendChild(s);
-  window.onYouTubeIframeAPIReady=()=>make(false);
+  window.onYouTubeIframeAPIReady=()=>make(true);   /* rolling from the off */
 })();
 
 $('play').onclick=()=>{
@@ -1990,12 +3757,14 @@ function honk(){
   duck(560);
 }
 $('horn').onclick=honk;
+$('sky').onclick=()=>setNight(!night);
 
 addEventListener('keydown',e=>{
   if(e.key==='ArrowRight')$('next').click();
   else if(e.key==='ArrowLeft')$('prev').click();
   else if(e.key===' '){e.preventDefault();$('play').click();}
   else if(e.key==='h'||e.key==='H')$('horn').click();
+  else if(e.key==='n'||e.key==='N')$('sky').click();
 });
 </script>
 </body>
