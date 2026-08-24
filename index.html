@@ -106,9 +106,6 @@
     -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
     border:1px solid rgba(255,255,255,.2);border-radius:999px;text-align:center}
   #warn code{background:rgba(255,255,255,.16);padding:1px 4px;font-size:10px;border-radius:3px}
-  /* the muted-autoplay nudge is not an error, so it does not wear the error red */
-  #warn.hush{color:#FFEAC2;background:rgba(26,19,12,.62);
-    border-color:rgba(255,222,160,.34);cursor:pointer}
 
   /* glass, shared by the horn, the map and the route picker */
   .glass{background:rgba(22,16,26,.42);
@@ -197,6 +194,17 @@
   @keyframes honk{0%{transform:scale(.93)} 16%{transform:scale(1.14)}
     40%{transform:scale(.97)} 58%{transform:scale(1.12)} 100%{transform:scale(1)}}
 
+  /* the seat switch: chase view or the driver's own, above the sky switch */
+  #seat{position:fixed;right:26px;top:50%;margin-top:106px;z-index:6;
+    width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
+    color:rgba(255,255,255,.88);transition:transform .12s,color .15s}
+  #seat:hover{color:#fff;transform:scale(1.07)}
+  #seat svg{width:25px;height:25px;display:block;fill:none;stroke:currentColor;
+    stroke-width:1.7;stroke-linecap:round;
+    filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
+  #seat[aria-pressed="true"]{color:var(--marigold)}
+  #seat[aria-pressed="true"] svg .rim{stroke-width:2.4}
+
   /* sun / moon — the sky switch, parked under the horn on the same edge */
   #sky{position:fixed;right:26px;top:50%;margin-top:44px;z-index:6;
     width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
@@ -219,6 +227,50 @@
   /* the keyboard hint is centred across the full width, so it runs under the
      masthead and the route pill long before the window gets properly narrow */
   @media (max-width:1200px){ #hint{display:none} }
+  /* while the gate is up it is already asking for that key, in letters this big */
+  body.gated #hint{display:none}
+
+  /* ---------- THE GATE. Nothing rolls until somebody says so.
+     A browser will not put sound on a page nobody has touched yet, so rather
+     than fight it, we ask — and make the asking part of the ride: the micro
+     sits at the pasal filling up, and the one press lets the handbrake off and
+     starts the tape together. It sits under the controls (z-index 4), so the
+     route, the horn and the sky switch all still work while it is up. -------- */
+  #gate{position:fixed;inset:0;z-index:4;display:grid;place-items:center;
+    padding:calc(20px + env(safe-area-inset-top)) 18px 150px;
+    text-align:center;cursor:pointer;
+    background:radial-gradient(118% 86% at 50% 40%,rgba(6,8,20,0) 26%,rgba(6,8,20,.58) 100%);
+    transition:opacity .55s ease,visibility .55s}
+  #gate.gone{opacity:0;visibility:hidden;pointer-events:none}
+  #gate .in{max-width:min(720px,92vw);
+    text-shadow:0 3px 24px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.5);
+    animation:gatein .6s cubic-bezier(.2,.9,.25,1) both}
+  @keyframes gatein{from{opacity:0;transform:translateY(16px)}}
+  #gate .lead{margin:0 0 18px;font-size:10.5px;font-weight:800;letter-spacing:.32em;
+    text-transform:uppercase;color:rgba(255,255,255,.7)}
+  #gate .lead b{color:var(--marigold);letter-spacing:.14em}
+  #gate .cta{margin:0;font-size:clamp(15px,2.5vw,21px);font-weight:600;line-height:1.5;
+    color:rgba(255,255,255,.94)}
+  #gate kbd{display:inline-block;font:inherit;font-weight:800;letter-spacing:.05em;
+    padding:.14em .7em;margin:0 .16em;border-radius:9px;color:#17121B;background:#fff;
+    box-shadow:0 3px 0 rgba(0,0,0,.32),0 7px 20px rgba(0,0,0,.4);
+    animation:pressme 2.1s ease-in-out infinite}
+  /* the key dips on its own, every couple of seconds, the way a hand would */
+  @keyframes pressme{0%,74%,100%{transform:translateY(0)}
+    82%{transform:translateY(3px);box-shadow:0 0 0 rgba(0,0,0,.32),0 3px 12px rgba(0,0,0,.4)}}
+  #gate .np{margin:.1em 0 0;font-family:var(--display);font-weight:400;line-height:1;
+    font-size:clamp(46px,10.5vw,104px);color:var(--marigold)}
+  #gate .en{margin:12px 0 0;font-size:clamp(10.5px,1.6vw,12.5px);font-weight:800;
+    letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.84)}
+  #gate .en i{font-style:normal;color:var(--marigold);margin:0 .6em}
+  #gate .sub{margin:26px 0 0;font-size:11.5px;line-height:1.6;color:rgba(255,255,255,.58)}
+  @media (prefers-reduced-motion:reduce){#gate .in,#gate kbd{animation:none}}
+  /* a phone has no space bar, so it is asked for a tap instead */
+  #gate .t{display:none}
+  @media (hover:none) and (pointer:coarse){
+    #gate .k{display:none}
+    #gate .t{display:inline}
+  }
 
   /* ---------- narrower windows: the legend goes, the radar shrinks ---------- */
   @media (max-width:900px){
@@ -255,6 +307,10 @@
       right:calc(16px + env(safe-area-inset-right));
       bottom:calc(var(--boardH,92px) + 86px + env(safe-area-inset-bottom))}
     #sky svg{width:22px;height:22px}
+    #seat{top:auto;margin-top:0;width:44px;height:44px;
+      right:calc(16px + env(safe-area-inset-right));
+      bottom:calc(var(--boardH,92px) + 138px + env(safe-area-inset-bottom))}
+    #seat svg{width:22px;height:22px}
     #map{display:block;width:92px;height:92px;
       left:calc(12px + env(safe-area-inset-left));
       bottom:calc(var(--boardH,92px) + 20px + env(safe-area-inset-bottom))}
@@ -263,6 +319,11 @@
     .icon{width:38px;height:38px} .icon svg{width:17px;height:17px}
     #play{width:46px;height:46px} #play svg{width:18px;height:18px}
     .sel .opt{padding:11px 12px;font-size:12.5px}
+    /* the gate clears the stacked player, radar and horn along the bottom */
+    #gate{padding:calc(76px + env(safe-area-inset-top)) 16px
+                 calc(var(--boardH,92px) + 108px + env(safe-area-inset-bottom))}
+    #gate .lead{letter-spacing:.22em;margin-bottom:13px}
+    #gate .sub{margin-top:18px;font-size:11px}
   }
   @media (max-width:400px){
     #disc{width:44px;height:44px;flex-basis:44px}
@@ -290,6 +351,13 @@
       width:min(460px,calc(100vw - 190px))}
     #map{width:88px;height:88px;left:calc(10px + env(safe-area-inset-left));
       bottom:calc(10px + env(safe-area-inset-bottom))}
+    /* short screen: the destination has to give up some of its height */
+    #gate{padding:calc(56px + env(safe-area-inset-top)) 120px
+                 calc(var(--boardH,92px) + 26px + env(safe-area-inset-bottom))}
+    #gate .lead{margin-bottom:9px}
+    #gate .np{font-size:clamp(34px,7.4vw,54px)}
+    #gate .en{margin-top:8px}
+    #gate .sub{display:none}
   }
 </style>
 </head>
@@ -297,6 +365,21 @@
 <canvas id="scene"></canvas>
 <div id="veil"></div>
 <div id="hint">← → change song · space play · H horn · N night · drag the bar to seek</div>
+
+<!-- The departure gate: up until the first press, and the reason the tape can
+     come on with sound at all. Under the controls, so the route can still be
+     changed while the micro fills up. -->
+<div id="gate">
+  <div class="in">
+    <p class="lead">Still filling up · <b>अझै एक जना</b></p>
+    <p class="cta"><span class="k">Press <kbd>Space</kbd></span><span class="t"><kbd>Tap</kbd>
+      anywhere</span> to start your journey to</p>
+    <p class="np" id="gnp">बिर्तामोड</p>
+    <p class="en"><span id="gen">Birtamode</span><i>·</i><span id="gkm">475 km</span></p>
+    <p class="sub"><span class="k">or tap anywhere — </span>the tape and the wheels
+      start together</p>
+  </div>
+</div>
 
 <div id="route" class="glass">
   <span class="from">Kathmandu</span><span class="arrow">→</span>
@@ -327,6 +410,15 @@
     <path d="M4.6 2.2Q1.4 15 4.6 27.8L20.4 19.6V10.4z"/>
     <path d="M20.4 10.8h5.4a4.2 4.2 0 0 1 0 8.4h-5.4z"/>
     <circle cx="33.4" cy="15" r="6.6"/>
+  </svg>
+</button>
+
+<button id="seat" class="glass" aria-label="Sit in the driver seat" aria-pressed="false" title="Driver view (V)">
+  <!-- a steering wheel: rim, hub, three spokes -->
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle class="rim" cx="12" cy="12" r="9.2"/>
+    <circle cx="12" cy="12" r="2.7"/>
+    <path class="spk" d="M12 9.3V3.2M9.6 13.1 4.3 17.4M14.4 13.1l5.3 4.3"/>
   </svg>
 </button>
 
@@ -404,15 +496,25 @@ const pickDest=()=>DESTS[(Math.random()*DESTS.length)|0];
 let DEST=pickDest();
 let redrawBand=null;                 /* assigned by the scene once the micro exists */
 let repaintPoles=null;               /* likewise, for the roadside distance boards */
-/* Music playing == micro rolling; paused == tea break. It starts true so the
-   scene is already moving while the tape loads, rather than opening on a
-   stationary picture waiting for YouTube. */
-let driving=true;
+let letThemIn=null;                  /* and the one that ends the boarding queue */
+/* Music playing == micro rolling; paused == tea break. It starts stopped: the
+   micro is at the pasal filling up, and it is not going anywhere until somebody
+   presses for the off — which is also the gesture the browser wants before it
+   will put sound on the page. So the tape and the wheels start together. */
+let driving=false;
+let started=false;                   /* has the journey been let go yet? */
+let departing=false;                 /* pressed, and waiting on the first note */
 
 /* Day or dark. The button only sets the target — the scene eases the whole sky,
    the lights and the signs across, so the switch is a dusk rather than a jump. */
 let night=false;
 let applyNight=null;                 /* assigned by the scene */
+
+/* Two ways to watch this journey: from behind the micro, the way you remember
+   a road, or from the seat, the way the man driving it has to. */
+let pov=false;
+let applySeat=null;                  /* assigned by the scene */
+let hornT=0;                         /* counts down while the horn is sounding */
 
 /* Roughly how far each place is from Kathmandu by road, for the distance poles.
    The BP Highway comes down out of the hills at Bardibas and runs east. */
@@ -440,14 +542,23 @@ const POIS=[
 ];
 /* the scene reports where the micro actually is; the sticker and radar follow it */
 let routeU=PASAL_US[0],routeMoving=false,hasScene=false;
-let mapRoute=[],mapPois=[],mapRiver=[];     /* loop, stops and the khola, in world x/z */
+let mapRoute=[],mapPois=[],mapRiver=[],mapBig=[];  /* loop, stops and the two kholas */
 const mapCar={x:0,z:0,a:0};                 /* our position and heading */
 function setDest(d){
   DEST=d;
   const el=$('dest');
   if(el&&el.value!==d) el.value=d;
+  paintGate();                         /* the departure board, while it is up */
   if(redrawBand)redrawBand();          /* repaint the micro's rear board */
   if(repaintPoles)repaintPoles();      /* and every distance board on the road */
+}
+/* where the gate says we are going — it can still be changed while we wait */
+function paintGate(){
+  const np=$('gnp');
+  if(!np) return;
+  np.textContent=DEST_NP[DEST]||DEST;
+  $('gen').textContent=DEST;
+  $('gkm').textContent=(DEST_KM[DEST]||0)+' km';
 }
 function setNight(on){
   night=!!on;
@@ -460,6 +571,18 @@ function setNight(on){
     b.classList.remove('flip');void b.offsetWidth;b.classList.add('flip');
   }
   if(applyNight)applyNight(night);
+}
+
+function setSeat(on){
+  pov=!!on;
+  const b=$('seat');
+  if(b){
+    b.setAttribute('aria-pressed',pov?'true':'false');
+    b.setAttribute('aria-label',pov?'Watch from behind':'Sit in the driver seat');
+    b.title=(pov?'Chase view':'Driver view')+' (V)';
+  }
+  document.body.classList.toggle('inside',pov);
+  if(applySeat)applySeat(pov);
 }
 
 if(typeof THREE==='undefined'){
@@ -482,7 +605,7 @@ const scene=new THREE.Scene();
 /* Evening haze in the hills is warm but thin — hold it back far enough that the
    green still reads, and let the ridge bands carry the distance instead. */
 scene.fog=new THREE.Fog(0xCE9A72,150,1150);
-const camera=new THREE.PerspectiveCamera(56,1,0.5,2400);
+const camera=new THREE.PerspectiveCamera(56,1,0.24,2400);
 /* How tall and narrow the window is: 0 for a laptop, 1 for a phone held upright.
    A portrait frame shows a far narrower slice of the world at the same lens, so
    the frame loop opens it up and aims higher — otherwise the micro sits off in a
@@ -549,12 +672,71 @@ for(let i=0;i<34;i++){const a=i/34*Math.PI*2;
   CP.push(new THREE.Vector3(Math.cos(a)*r,
     8+Math.sin(a*2)*20+Math.cos(a*3.7)*11+Math.sin(a*5.3+1.1)*6,Math.sin(a)*r));}
 const curve=new THREE.CatmullRomCurve3(CP,true,'catmullrom',0.5);
-const RS=[];for(let i=0;i<300;i++)RS.push(curve.getPointAt(i/300));
-function nearRoad(x,z){let md=1e9,ny=0;
-  for(let i=0;i<RS.length;i++){const dx=RS[i].x-x,dz=RS[i].z-z,d=dx*dx+dz*dz;
-    if(d<md){md=d;ny=RS[i].y;}}
-  return {d:Math.sqrt(md),y:ny};}
-/* ---- THE KHOLA — a river cutting straight across the road at BRIDGE_U.
+/* ---- WHERE THE ROAD IS. The whole cross-section keys off this: the loop as a
+   polyline, and for any point on the map how far it is from the tarmac, which
+   side of the tarmac it fell on, and how high the tarmac is there. Distance to
+   the segments rather than to the sample points, because a road edge sampled
+   every few metres scallops, and the lip of a bhir has to be a line. ---- */
+const RN=LOW?320:440;
+const RSX=new Float64Array(RN+1),RSY=new Float64Array(RN+1),RSZ=new Float64Array(RN+1);
+for(let i=0;i<=RN;i++){const p=curve.getPointAt((i%RN)/RN);RSX[i]=p.x;RSY[i]=p.y;RSZ[i]=p.z;}
+const SDX=new Float64Array(RN),SDZ=new Float64Array(RN),SIL=new Float64Array(RN),
+      SNX=new Float64Array(RN),SNZ=new Float64Array(RN);
+for(let i=0;i<RN;i++){
+  const dx=RSX[i+1]-RSX[i],dz=RSZ[i+1]-RSZ[i],l2=dx*dx+dz*dz,l=Math.sqrt(l2);
+  SDX[i]=dx;SDZ[i]=dz;SIL[i]=1/l2;
+  SNX[i]=-dz/l;SNZ[i]=dx/l;            /* + is the hill side, - is the drop */
+}
+const RLEN=curve.getLength();
+
+/* ---- THE BENCH - the shelf the road sits on. It is only as wide as it has to
+   be, except where something stands on it: every pasal, chautari, chorten and
+   swing needs ground under it, so the cut is widened out beneath each one, the
+   way it is on the real road. ---- */
+const BENCH_H=9.2,BENCH_V=8.7;         /* half-widths: uphill side, drop side */
+const WIDEN=[
+  ...PASAL_US.map(u=>({u,w:8,l:34})),
+  ...THAKALI_US.map(u=>({u,w:9,l:40})),
+  ...SAUCH_US.map(u=>({u,w:7,l:30})),
+  ...CROSS_US.map(u=>({u,w:5,l:28})),
+  ...[0.28,0.66].map(u=>({u,w:3,l:18})),         /* the prayer flag poles */
+  {u:0.17,w:7,l:26},{u:0.58,w:7,l:26},           /* the linge ping */
+  {u:0.46,w:7,l:28},{u:0.458,w:5,l:22},          /* the chorten, and the gadhi board */
+  {u:0.78,w:6,l:26},                             /* the chautari */
+  {u:0.05,w:5,l:24},{u:0.13,w:6,l:28},{u:0.34,w:6,l:28},
+  {u:0.60,w:5,l:24},{u:0.85,w:6,l:28},           /* where the goats stand about */
+  {u:0.762,w:5,l:44}                             /* room for the pahiro and its machine */
+];
+function widenAt(u){
+  let w=0;
+  for(const g of WIDEN){
+    let du=Math.abs(u-g.u);du=Math.min(du,1-du);
+    w=Math.max(w,g.w*(1-sstep(g.l*0.3,g.l*1.7,du*RLEN)));
+  }
+  return w;
+}
+const SBW=new Float64Array(RN+1);
+for(let i=0;i<=RN;i++) SBW[i]=widenAt((i%RN)/RN);
+
+function nearRoad(x,z){
+  let md=1e18,bi=0,bh=0;
+  for(let i=0;i<RN;i++){
+    const px=x-RSX[i],pz=z-RSZ[i];
+    let h=(px*SDX[i]+pz*SDZ[i])*SIL[i];
+    if(h<0)h=0;else if(h>1)h=1;
+    const ex=px-SDX[i]*h,ez=pz-SDZ[i]*h,d=ex*ex+ez*ez;
+    if(d<md){md=d;bi=i;bh=h;}
+  }
+  const px=x-RSX[bi],pz=z-RSZ[bi];
+  return {d:Math.sqrt(md),
+          s:px*SNX[bi]+pz*SNZ[bi],
+          y:RSY[bi]+(RSY[bi+1]-RSY[bi])*bh,
+          bw:SBW[bi]+(SBW[bi+1]-SBW[bi])*bh,
+          nx:SNX[bi],nz:SNZ[bi],           /* across the road, towards the hill */
+          u:(bi+bh)/RN};                   /* and how far round the loop */
+}
+/* ---- THE KHOLA THE PUL CROSSES - a side stream coming down off the hill,
+   under the deck at BRIDGE_U, and straight over the edge on the other side.
    It is carved into the terrain itself, road corridor included: that gorge is
    what the bridge spans, so the two have to agree on where the ground is. ---- */
 const BR_P=curve.getPointAt(BRIDGE_U);
@@ -562,55 +744,198 @@ const BR_T=curve.getTangentAt(BRIDGE_U).setY(0).normalize();   /* along the road
 const BR_A=new THREE.Vector3(-BR_T.z,0,BR_T.x);                /* along the river */
 const WATER_Y=BR_P.y-10.5;
 const RIV_W=14,RIV_BANK=30,RIV_RUN=230;
-/* a: how far down the river. b: how far across it — measured up the road, so the
-   gorge opens exactly RIV_BANK either side of the crossing and the deck can span it. */
+/* a: how far up the stream, and being the uphill side, positive. b: how far
+   across it - measured up the road, so the gorge opens exactly RIV_BANK either
+   side of the crossing and the deck can span it. */
 function riverFrame(x,z){
   const dx=x-BR_P.x,dz=z-BR_P.z;
   const a=dx*BR_A.x+dz*BR_A.z;
   /* it meanders, but both terms vanish at a=0 so it passes dead under the bridge */
   return {a,b:dx*BR_T.x+dz*BR_T.z-(Math.sin(a*0.0115)*14+Math.sin(a*0.026)*6)};
 }
+/* no stream runs level: this one climbs a tenth for every metre it goes up the hill */
+const kholaY=a=>WATER_Y+Math.max(0,a)*0.105;
 function riverMask(x,z){               /* 1 mid-channel, 0 past the banks and the run */
   const f=riverFrame(x,z);
-  return (1-sstep(RIV_W,RIV_BANK,Math.abs(f.b)))*(1-sstep(RIV_RUN*0.74,RIV_RUN,Math.abs(f.a)));
+  /* one-sided, now the road is cut into a hillside: there is a gorge to carve
+     above the pul, and below it the bhir has already taken the ground away */
+  return (1-sstep(RIV_W,RIV_BANK,Math.abs(f.b)))
+        *(f.a>=0?1-sstep(RIV_RUN*0.72,RIV_RUN,f.a):1-sstep(10,26,-f.a));
 }
-function terrainY(x,z){
-  const n=nearRoad(x,z),rad=Math.hypot(x,z);
+
+/* ---- THE CROSS-SECTION. This is the thing that makes it a road in the pahad
+   rather than a ring road with scenery on it: the hillside stands up on one
+   side of the tarmac, and on the other the ground simply goes - the bhir - all
+   the way down to the khola in the bottom of the valley, with the far side of
+   the valley climbing again beyond it. Every height in the scene comes through
+   here, so the shops, the poles and the goats all sit on the same ground. ---- */
+const BHIR=52;                    /* how far down it is from the tarmac to the water */
+const RIV_OFF=104,CHW=22;         /* the channel: how far out, and half its width */
+const FAR_RUN=190;                /* how long the opposite hillside takes to climb */
+
+function natural(x,z){            /* the hills as they would be with no road cut in */
+  const rad=Math.hypot(x,z);
   /* the outer bowl is kept low so the ridge bands behind it stay in view */
   let h=fbm(x*0.0032+40,z*0.0032+40)*66+fbm(x*0.011,z*0.011)*13+Math.max(0,rad-360)*0.20;
   /* the terraces: rice fields cut the hillside into steps all the way up */
   if(fbm(x*0.0055+9,z*0.0055+9)>0.44&&h<58) h=Math.round(h/2.05)*2.05;
-  const k=sstep(11,52,n.d);
-  const y=(n.y-0.55)*(1-k)+h*k;
+  return h;
+}
+function terrainY(x,z){
+  const n=nearRoad(x,z),h=natural(x,z),roadY=n.y-0.14;
+  let y;
+  if(n.s>=0){
+    /* uphill: the cut face standing off the drain at about the angle loose
+       hillside will hold, easing back into whatever the hill was doing above */
+    const q=Math.max(0,n.s-(BENCH_H+n.bw));
+    /* how high they had to cut here, which changes along the road */
+    const ch=6.5+fbm(x*0.0075+70,z*0.0075+70)*11;
+    const above=ch+30*Math.max(0,q-ch/1.9)/(Math.max(0,q-ch/1.9)+58);
+    const rise=Math.min(1.9*q,above);      /* the face, and the hill over the top of it */
+    y=roadY+Math.max(rise,(h-roadY)*sstep(24,170,q))
+     +(fbm(x*0.1+31,z*0.1+31)-0.5)*Math.min(2.9,q*0.55)
+     +(fbm(x*0.19+77,z*0.19+77)-0.5)*Math.min(1.1,q*0.35);
+  }else{
+    const q=Math.max(0,-n.s-(BENCH_V+n.bw));
+    const run=Math.max(34,RIV_OFF-CHW-(BENCH_V+n.bw));
+    const bed=roadY-BHIR;
+    if(q<run){                    /* the bhir: sheer at the lip, shelving out lower down */
+      y=roadY-BHIR*(1-Math.pow(1-q/run,2.7))
+       +(fbm(x*0.095+58,z*0.095+58)-0.5)*Math.min(3.8,q*0.62)
+       +(fbm(x*0.2+91,z*0.2+91)-0.5)*Math.min(1.3,q*0.4);
+    }else{
+      const b=q-run;
+      if(b<CHW*2){                /* the bed itself: pools and gravel bars, braided */
+        y=bed+Math.sin(Math.PI*b/(CHW*2))*(-2.1+fbm(x*0.055+11,z*0.055+11)*3.6);
+      }else{                      /* and up the far side of the valley */
+        const c=b-CHW*2;
+        const opp=(30+fbm(x*0.006+120,z*0.006+120)*34)*sstep(8,FAR_RUN,c);
+        y=bed+Math.max(1.05*c/(1+c/16),Math.max(h-bed,opp)*sstep(4,FAR_RUN*0.8,c));
+      }
+    }
+  }
   const m=riverMask(x,z);
-  if(m<=0) return y;
-  const f=riverFrame(x,z);             /* deepest mid-stream, shelving up to the banks */
-  return y*(1-m)+(WATER_Y-1.5-Math.max(0,RIV_W-Math.abs(f.b))*0.17)*m;}
+  if(m>0){                        /* a stream only ever cuts down, it never fills */
+    const f=riverFrame(x,z);
+    const rb=kholaY(f.a)-1.5-Math.max(0,RIV_W-Math.abs(f.b))*0.17;
+    y=Math.min(y,y*(1-m)+rb*m);
+  }
+  return y;
+}
 
-const SEG=LOW?132:168,SPAN=1250;
-const tg=new THREE.PlaneGeometry(SPAN,SPAN,SEG,SEG);tg.rotateX(-Math.PI/2);
-const tp=tg.attributes.position,cols=[];
 /* Sindhuli in Dashain: wet-green valleys, ripe gold on the terraces, and sal
-   forest closing over the ridges — these hills are wooded to the top, so there
-   is no bare rock and certainly no snow at this height. */
+   forest closing over the ridges - these hills are wooded to the top, so there
+   is no bare rock and certainly no snow at this height. The exceptions are the
+   two faces the road itself made: the cut, and the bhir under it. */
 const cLow=new THREE.Color(0x63914A),cField=new THREE.Color(0xC7A94E),
       cMid=new THREE.Color(0x466E37),cRock=new THREE.Color(0x5A7047),
-      cHaze=new THREE.Color(0x8D9A80);
-for(let i=0;i<tp.count;i++){
-  const x=tp.getX(i),z=tp.getZ(i),y=terrainY(x,z);tp.setY(i,y);
-  const c=new THREE.Color();
+      cHaze=new THREE.Color(0x8D9A80),
+      cFace=new THREE.Color(0x6B5138),          /* raw earth on a face that keeps sliding */
+      cStone=new THREE.Color(0x7C7669),         /* and the rock showing through it */
+      cGrav=new THREE.Color(0xA9A498),          /* the gravel down in the riverbed */
+      cDust=new THREE.Color(0x7B7368);          /* the beaten earth either side of the tar */
+const gcol=new THREE.Color();
+/* slope is metres of fall per metre across; kerb is how close to the tarmac
+   this is, and grav whether it is in the bed of the khola */
+function groundColor(x,z,y,slope,kerb,grav,out){
+  const c=gcol;
+  const rock=sstep(0.66,1.5,slope);
   if(y<16) c.copy(cLow).lerp(cField,fbm(x*0.006+3,z*0.006+3));
   else if(y<44) c.copy(cLow).lerp(cMid,sstep(16,44,y));
   else if(y<78) c.copy(cMid).lerp(cRock,sstep(44,78,y));
   else c.copy(cRock).lerp(cHaze,sstep(78,150,y));
-  /* the terraced ground reads gold — the same test that cut the steps in */
-  if(y<58&&fbm(x*0.0055+9,z*0.0055+9)>0.44)
-    c.lerp(cField,0.22+0.34*fbm(x*0.02+21,z*0.02+21));
+  /* the terraced ground reads gold, and terraces need ground near enough level
+     to hold water on - the same test that cut the steps in */
+  const flat=1-sstep(0.2,0.52,slope);
+  if(y<58&&flat>0.02&&fbm(x*0.0055+9,z*0.0055+9)>0.44)
+    c.lerp(cField,(0.22+0.34*fbm(x*0.02+21,z*0.02+21))*flat);
+  if(rock>0){
+    c.lerp(cFace,rock*0.94);
+    /* rock does not weather evenly: what is exposed goes grey, what is in the
+       clefts stays dark, and the difference is most of what you see */
+    const bare=fbm(x*0.13+5,z*0.13+5);
+    c.lerp(cStone,rock*sstep(0.5,0.72,bare));
+    c.multiplyScalar(1-rock*0.26*sstep(0.46,0.2,bare));
+    /* and it comes in beds, which is the other half of reading it as rock */
+    c.multiplyScalar(1+rock*0.1*Math.sin(y*0.62+fbm(x*0.02,z*0.02)*5));
+  }
+  if(grav>0) c.lerp(cGrav,grav);
+  /* the stony bed of the side khola, which the monsoon rearranges every year */
+  const rm=riverMask(x,z);
+  if(rm>0.08) c.lerp(cGrav,Math.min(1,rm*1.4)*0.82);
+  if(kerb>0) c.lerp(cDust,kerb*0.85);          /* nothing grows where the wheels go */
   const sh=0.84+fbm(x*0.05,z*0.05)*0.3;
-  cols.push(c.r*sh,c.g*sh,c.b*sh);
+  out.push(c.r*sh,c.g*sh,c.b*sh);
 }
-tg.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));tg.computeVertexNormals();
-scene.add(new THREE.Mesh(tg,new THREE.MeshPhongMaterial({vertexColors:true,flatShading:true,shininess:0})));
+
+/* ---- THE WIDE LANDSCAPE. A four-metre grid cannot hold a road edge, so the
+   ground within CORR of the tarmac is its own much finer mesh, and every quad
+   of this one that falls entirely inside that band is left out - the corridor
+   covers the hole with thirty metres to spare. ---- */
+const CORR=208,HOLE=178;
+const SEG=LOW?144:204,SPAN=1250;
+{
+  const gx=SEG+1,pos=[],col=[],idx=[],dd=new Float64Array(gx*gx);
+  for(let j=0;j<gx;j++) for(let i=0;i<gx;i++){
+    const x=(i/SEG-0.5)*SPAN,z=(j/SEG-0.5)*SPAN,y=terrainY(x,z);
+    pos.push(x,y,z);
+    dd[j*gx+i]=nearRoad(x,z).d;
+    groundColor(x,z,y,0,0,0,col);
+  }
+  for(let j=0;j<SEG;j++) for(let i=0;i<SEG;i++){
+    const a=j*gx+i,b=a+1,c=a+gx,d=c+1;
+    if(dd[a]<HOLE&&dd[b]<HOLE&&dd[c]<HOLE&&dd[d]<HOLE) continue;
+    idx.push(a,c,b, b,c,d);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  g.setIndex(idx);g.computeVertexNormals();
+  scene.add(new THREE.Mesh(g,new THREE.MeshPhongMaterial({vertexColors:true,
+    flatShading:true,shininess:0})));
+}
+/* ---- and the corridor: along the loop every few metres, and across it dense
+   where the ground turns over - the lip of the bhir, the toe of the cut - and
+   loose out towards the edges, where nobody is looking closely. ---- */
+{
+  const ST=LOW?400:640,K=LOW?18:26,COLS=2*K+5;
+  const pos=[],col=[],idx=[],lat=[],yy=[];
+  for(let i=0;i<=ST;i++){
+    const u=(i%ST)/ST;
+    const p=curve.getPointAt(u),tan=curve.getTangentAt(u);
+    const nl=Math.hypot(tan.x,tan.z),sx=-tan.z/nl,sz=tan.x/nl;
+    const w=widenAt(u),bh=BENCH_H+w,bv=BENCH_V+w;
+    lat.length=0;
+    for(let k=K;k>=1;k--) lat.push(-(bv+(CORR-bv)*Math.pow(k/K,2.2)));
+    lat.push(-bv,-bv*0.5,0,bh*0.5,bh);
+    for(let k=1;k<=K;k++) lat.push(bh+(CORR-bh)*Math.pow(k/K,2.2));
+    /* heights first, so the slope across the section is known when it comes to
+       painting: a face steep enough to shed its soil is shown as rock */
+    yy.length=0;
+    for(let k=0;k<COLS;k++) yy.push(terrainY(p.x+sx*lat[k],p.z+sz*lat[k]));
+    for(let k=0;k<COLS;k++){
+      const x=p.x+sx*lat[k],z=p.z+sz*lat[k],y=yy[k];
+      pos.push(x,y,z);
+      const k0=Math.max(0,k-1),k1=Math.min(COLS-1,k+1);
+      const slope=Math.abs(yy[k1]-yy[k0])/Math.max(0.8,lat[k1]-lat[k0]);
+      const grav=lat[k]<0?1-sstep(CHW*1.1,CHW*1.85,Math.abs(-lat[k]-RIV_OFF)):0;
+      /* the beaten strip either side of the tarmac, where the trucks pull off */
+      const kerb=1-sstep(lat[k]<0?bv-1.4:bh-1.4,(lat[k]<0?bv:bh)+2.2,Math.abs(lat[k]));
+      groundColor(x,z,y,slope,kerb,grav*0.9,col);
+    }
+    if(i<ST){
+      const a=i*COLS,b=a+COLS;
+      for(let k=0;k<COLS-1;k++)
+        idx.push(a+k,a+k+1,b+k, a+k+1,b+k+1,b+k);
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  g.setIndex(idx);g.computeVertexNormals();
+  scene.add(new THREE.Mesh(g,new THREE.MeshPhongMaterial({vertexColors:true,
+    flatShading:true,shininess:0})));
+}
 
 function ribbon(halfW,yOff,mat){
   const N=520,pos=[],idx=[],up=new THREE.Vector3(0,1,0);
@@ -626,8 +951,8 @@ function ribbon(halfW,yOff,mat){
   g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
   g.setIndex(idx);g.computeVertexNormals();return new THREE.Mesh(g,mat);
 }
-scene.add(ribbon(6.6,0.02,new THREE.MeshLambertMaterial({color:0x554E40})));
-scene.add(ribbon(4.9,0.10,new THREE.MeshLambertMaterial({color:0x28241F})));
+scene.add(ribbon(6.0,0.02,new THREE.MeshLambertMaterial({color:0x6A6152})));
+scene.add(ribbon(4.4,0.10,new THREE.MeshLambertMaterial({color:0x28241F})));
 {
   const dashes=new THREE.InstancedMesh(new THREE.BoxGeometry(0.34,0.04,3.2),
     dimAtNight(new THREE.MeshBasicMaterial({color:0xCFB682}),0.34),150);
@@ -667,11 +992,23 @@ const villageLights=[];
   const HUES=[0.02,0.11,0.33,0.55,0.86];
   const tint=new THREE.Color(),tintUp=new THREE.Color();
   let ti=0,bi=0,pn=0,hi=0,guard=0;
-  while(ti<TN&&guard++<26000){
+  while(ti<TN&&guard++<38000){
     const a=Math.random()*Math.PI*2,r=90+Math.random()*470;
     const x=Math.cos(a)*r,z=Math.sin(a)*r,nr=nearRoad(x,z);
     if(nr.d<11) continue;
     if(riverMask(x,z)>0.3) continue;             /* nothing grows in the riverbed */
+    /* and nothing grows on the two faces the road made either: the cut above it
+       is raw earth, and a bhir is a bhir because the soil could not stay on it.
+       Below the face the ground shelves out and the forest starts again — but
+       not in the gravel of the channel, which the khola moves every monsoon. */
+    let onSlope=false;
+    if(nr.s>=0){
+      onSlope=nr.s-(BENCH_H+nr.bw)<17;
+    }else{
+      const q=-nr.s-(BENCH_V+nr.bw),run=Math.max(34,RIV_OFF-CHW-(BENCH_V+nr.bw));
+      onSlope=q<run*0.66||Math.abs(q-run-CHW)<CHW*1.15;
+    }
+    if(onSlope) continue;
     const y=terrainY(x,z);
     if(y>96) continue;
     const sc=0.55+Math.random()*0.85;
@@ -694,7 +1031,9 @@ const villageLights=[];
       bi++;
     }
     ti++;
-    if(hi<NHOUSE&&nr.d>15&&nr.d<40&&Math.random()<0.06&&y<58){
+    /* a village sits above the road, not on the cut: the ground there is flat
+       enough to build on and the monsoon runs past it rather than through it */
+    if(hi<NHOUSE&&nr.s>0&&nr.s-(BENCH_H+nr.bw)>20&&nr.d<78&&Math.random()<0.08&&y<58){
       const hs=0.8+Math.random()*0.5,rot=Math.random()*6.28;
       q.setFromAxisAngle(new THREE.Vector3(0,1,0),rot);s.set(hs,hs,hs);
       houseW.setMatrixAt(hi,m.compose(new THREE.Vector3(x,y+1.8*hs,z),q,s));
@@ -830,11 +1169,23 @@ function lampPool(w,l,ahead,max){
 const micro=new THREE.Group();
 const microLights=[];
 let microDoor=null;                    /* the sliding door, opened by the frame loop */
+let microGlass=null;                   /* so it can be seen through from inside */
+const WB=5.04;                         /* the wheelbase, which decides how it sits */
+const WHEELS={steer:[],spin:[]};       /* filled in below, turned by the frame loop */
+/* the cab, for when you are sitting in it rather than following behind */
+const CABREF={group:null,wheel:null,hands:[],arms:[],fringe:[],meter:[],
+              needle:null,garland:null,mala:null,gear:null,horn:null};
 {
   const M=(c)=>new THREE.MeshPhongMaterial({color:c,flatShading:true,shininess:0});
   const white=M(0xF2EFE7), glass=M(0x18222E), dark=M(0x1F1D1A), grey=M(0x8C8880), chrome=M(0xB6B2A8);
+  microGlass=glass;
 
-  const lower=new THREE.Mesh(new THREE.BoxGeometry(3.24,1.62,7.5),white);lower.position.y=1.78;micro.add(lower);
+  /* the lid of this box would otherwise lie across the cabin at sill height,
+     so it alone faces inward: from outside the window band hides it anyway */
+  const inward=M(0xF2EFE7);inward.side=THREE.BackSide;
+  const lower=new THREE.Mesh(new THREE.BoxGeometry(3.24,1.62,7.5),
+    [white,white,inward,white,white,white]);
+  lower.position.y=1.78;micro.add(lower);
   const green=new THREE.Mesh(new THREE.BoxGeometry(3.16,1.18,6.86),white);green.position.y=3.18;micro.add(green);
   const roof=new THREE.Mesh(new THREE.BoxGeometry(3.02,0.34,6.6),white);roof.position.y=3.94;micro.add(roof);
   const nose=new THREE.Mesh(new THREE.BoxGeometry(3.14,1.24,0.92),white);
@@ -903,14 +1254,26 @@ let microDoor=null;                    /* the sliding door, opened by the frame 
   }
   micro.add(lampPool(12,34,17,0.66));
 
-  for(const sx of [-1,1]) for(const sz of [-2.62,2.42]){
-    const w=new THREE.Mesh(new THREE.CylinderGeometry(0.74,0.74,0.46,14),dark);
-    w.rotation.z=Math.PI/2;w.position.set(sx*1.62,0.74,sz);micro.add(w);
-    const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.5,10),chrome);
-    hub.rotation.z=Math.PI/2;hub.position.set(sx*1.65,0.74,sz);micro.add(hub);
-    const arch=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,2.1),M(0x8E8A82));
-    arch.position.set(sx*1.64,1.32,sz);micro.add(arch);
+/* ---- The wheels, each on its own pair of pivots: the front two steer, and all
+   four turn at whatever rate the road is going past underneath. Spokes on the
+   hubs, because a wheel with a plain face could be sliding rather than rolling
+   and on a road like this that is exactly the difference worth showing. ---- */
+for(const sx of [-1,1]) for(const sz of [-2.62,2.42]){
+  const steer=new THREE.Group();steer.position.set(sx*1.62,0.74,sz);micro.add(steer);
+  const spin=new THREE.Group();steer.add(spin);
+  const w=new THREE.Mesh(new THREE.CylinderGeometry(0.74,0.74,0.46,14),dark);
+  w.rotation.z=Math.PI/2;spin.add(w);
+  const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.5,10),chrome);
+  hub.rotation.z=Math.PI/2;hub.position.x=sx*0.03;spin.add(hub);
+  for(let k=0;k<3;k++){
+    const sp=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.52,0.09),chrome);
+    sp.position.x=sx*0.26;sp.rotation.x=k*1.047;spin.add(sp);
   }
+  if(sz<0) WHEELS.steer.push(steer);
+  WHEELS.spin.push(spin);
+  const arch=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,2.1),M(0x8E8A82));
+  arch.position.set(sx*1.64,1.32,sz);micro.add(arch);
+}
 
   for(const sx of [-1,1]){
     const rail=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.12,6.2),chrome);
@@ -1085,6 +1448,357 @@ let microDoor=null;                    /* the sliding door, opened by the frame 
     new THREE.MeshBasicMaterial({color:0x140F06,transparent:true,opacity:0.32}));
   shade.rotation.x=-Math.PI/2;shade.position.y=0.05;micro.add(shade);
 }
+/* ============================================================
+   THE DRIVER'S SEAT. Everything above is the micro seen from outside; this is
+   the other half of the same vehicle, and it only ever gets rendered when you
+   are sitting in it. Nepal keeps left, so the seat is on the right, and what is
+   in front of it is what is in front of every micro on this road: a velvet
+   cover on the dash, a jhalar of fringe across the top of the glass, a mala of
+   sayapatri hung off the mirror because it is Dashain, Ganesh glued to the
+   dash with a tika on him, the tape deck that is playing, and a wheel with a
+   cover on it that the driver never takes both hands off for long.
+   ============================================================ */
+{
+  /* everything in here carries a little light of its own: a cab lit only
+     through the windscreen loses its whole floor to black, and the point of
+     sitting in it is being able to see what is in it */
+  const IM=(c,x)=>new THREE.MeshPhongMaterial(Object.assign({color:c,
+    emissive:new THREE.Color(c).multiplyScalar(0.34),
+    flatShading:true,shininess:0},x||{}));
+  const cab=new THREE.Group();cab.visible=false;micro.add(cab);
+  /* the shell of the vehicle is one height; the floor he actually sits on is
+     the top of it, so everything he touches rides in here */
+  const seat=new THREE.Group();seat.position.y=0.16;cab.add(seat);
+  const trim=IM(0x2A2521),vinyl=IM(0x3A332C),plastic=IM(0x1D1B18),
+        steelC=IM(0x9A9690),skin=IM(0xA0724B),sleeve=IM(0x35557A),
+        velvet=IM(0x8E1B22),brassC=IM(0xC9A24A);
+
+  /* ---- the shell of the cab. The body panels outside are single-sided, so
+     from in here they are simply not there: these are the surfaces you would
+     actually be looking at from the seat. ---- */
+  {
+    const floor=new THREE.Mesh(new THREE.BoxGeometry(3.06,0.06,7.2),IM(0x322D28));
+    floor.position.set(0,1.52,-0.2);cab.add(floor);
+    /* rubber matting up the middle, worn through where his heel goes */
+    const mat2=new THREE.Mesh(new THREE.BoxGeometry(2.7,0.03,4.4),IM(0x1B1917));
+    mat2.position.set(0,1.56,-1.2);cab.add(mat2);
+    const lining=new THREE.Mesh(new THREE.BoxGeometry(3.0,0.08,6.7),IM(0xCFC8B8));
+    lining.position.set(0,3.76,-0.3);cab.add(lining);
+    for(const sx of [-1,1]){
+      /* the door card, which stops below the window so he can see out of it,
+         with a sill along the top and the grab handle where his elbow is */
+      /* the whole side below the glass, so the hillside does not come through
+         the panel that is not there when you look at it from in here */
+      const wall=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.86,sx<0?2.3:6.4),
+        IM(0x3E3831));
+      wall.position.set(sx*1.57,2.3,sx<0?-2.2:-0.4);cab.add(wall);
+      const card=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.62,1.9),vinyl);
+      card.position.set(sx*1.53,2.32,-2.1);cab.add(card);
+      const sill=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.09,sx<0?2.3:6.4),trim);
+      sill.position.set(sx*1.5,2.76,sx<0?-2.2:-0.4);cab.add(sill);
+      const grab=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.07,0.36),steelC);
+      grab.position.set(sx*1.47,2.46,-2.5);cab.add(grab);
+      /* the pillar either side of the screen, which is most of what frames the road */
+      const pil=new THREE.Mesh(new THREE.BoxGeometry(0.13,1.3,0.19),trim);
+      pil.position.set(sx*1.45,3.16,-3.3);pil.rotation.x=-0.12;cab.add(pil);
+    }
+    /* the bulkhead under the screen: without it you are looking through the
+       front of the vehicle at the tarmac, which is a striking effect and not
+       the one we are after */
+    const fire=new THREE.Mesh(new THREE.BoxGeometry(3.06,1.22,0.1),IM(0x2A2622));
+    fire.position.set(0,2.1,-3.48);cab.add(fire);
+    const header=new THREE.Mesh(new THREE.BoxGeometry(3.0,0.17,0.24),trim);
+    header.position.set(0,3.72,-3.28);cab.add(header);
+    /* sun visors, folded up where they always are */
+    for(const sx of [-0.7,0.7]){
+      const v=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.05,0.38),IM(0x8A8378));
+      v.position.set(sx,3.58,-3.14);v.rotation.x=-0.5;cab.add(v);
+    }
+  }
+
+  /* ---- the dash, with a velvet cover over it and a fringe on the edge ---- */
+  {
+    const top=new THREE.Mesh(new THREE.BoxGeometry(3.0,0.14,0.72),vinyl);
+    top.position.set(0,2.56,-3.12);seat.add(top);
+    const face=new THREE.Mesh(new THREE.BoxGeometry(3.0,0.62,0.16),IM(0x423B33));
+    face.position.set(0,2.22,-2.8);seat.add(face);
+    const knee=new THREE.Mesh(new THREE.BoxGeometry(3.0,0.46,0.44),IM(0x393330));
+    knee.position.set(0,1.94,-3.0);seat.add(knee);
+    /* the velvet, and the little bobbles along the near edge of it */
+    const vel=new THREE.Mesh(new THREE.BoxGeometry(2.9,0.05,0.66),velvet);
+    vel.position.set(0,2.645,-3.12);seat.add(vel);
+    for(let i=0;i<19;i++){
+      const b=new THREE.Mesh(new THREE.SphereGeometry(0.036,6,5),
+        IM(i%2?0xE8C23A:0xD8382A));
+      b.position.set(-1.42+i*0.158,2.6,-2.79);seat.add(b);
+    }
+  }
+
+  /* ---- the wheel. Cloth cover, three spokes, and the horn in the middle of
+     it, which on this road is used more than the brake. ---- */
+  const wheel=new THREE.Group();
+  wheel.position.set(0.92,2.68,-2.74);
+  wheel.rotation.x=-0.42;                /* the column lies back towards the seat */
+  seat.add(wheel);
+  {
+    /* a stitched cloth cover, the kind that comes four to a card for two
+       hundred rupees and outlasts the upholstery */
+    const cov=tex((c,w,h)=>{
+      c.fillStyle='#4A171C';c.fillRect(0,0,w,h);
+      c.strokeStyle='rgba(216,180,70,.30)';c.lineWidth=2.4;
+      for(let x=0;x<w;x+=19){c.beginPath();c.moveTo(x,0);c.lineTo(x+9,h);c.stroke();}
+      c.strokeStyle='rgba(16,10,10,.45)';c.lineWidth=1.6;
+      for(let x=9;x<w;x+=19){c.beginPath();c.moveTo(x,0);c.lineTo(x+9,h);c.stroke();}
+    },64,16);
+    cov.wrapS=cov.wrapT=THREE.RepeatWrapping;cov.repeat.set(11,1);
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(0.3,0.036,7,26),
+      new THREE.MeshPhongMaterial({map:cov,flatShading:true,shininess:6}));
+    wheel.add(rim);
+    for(const a of [Math.PI*0.5,Math.PI*1.17,Math.PI*1.83]){
+      const sp=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.28,0.042),plastic);
+      sp.position.set(Math.cos(a)*0.155,Math.sin(a)*0.155,-0.01);
+      sp.rotation.z=a-Math.PI/2;wheel.add(sp);
+    }
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.06,12),plastic);
+    hub.rotation.x=Math.PI/2;wheel.add(hub);
+    const horn=new THREE.Mesh(new THREE.CylinderGeometry(0.066,0.066,0.045,12),
+      lampAtNight(new THREE.MeshBasicMaterial({color:0x8E2A20}),0x8E2A20,0xC24030));
+    horn.rotation.x=Math.PI/2;horn.position.z=0.03;wheel.add(horn);
+    /* the column, and the indicator stalk off the side of it */
+    const col=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.09,0.5,8),plastic);
+    col.rotation.x=Math.PI/2+0.42;col.position.set(0.92,2.56,-2.52);seat.add(col);
+    const stalk=new THREE.Mesh(new THREE.BoxGeometry(0.26,0.03,0.03),plastic);
+    stalk.position.set(0.72,2.58,-2.58);seat.add(stalk);
+    CABREF.horn=horn;
+  }
+
+  /* ---- his hands on it, and the forearms that follow them round ---- */
+  const hands=[],arms=[];
+  for(const h of [{a:Math.PI*0.80,sx:-1},{a:Math.PI*0.20,sx:1}]){
+    const grip=new THREE.Group();
+    grip.position.set(Math.cos(h.a)*0.3,Math.sin(h.a)*0.3,0.015);
+    grip.rotation.z=h.a+Math.PI/2;       /* the hand lies along the rim, not across it */
+    wheel.add(grip);
+    const palm=new THREE.Mesh(new THREE.BoxGeometry(0.075,0.17,0.115),skin);
+    grip.add(palm);
+    const thumb=new THREE.Mesh(new THREE.BoxGeometry(0.045,0.115,0.045),skin);
+    thumb.position.set(0.008,0.052,0.062);thumb.rotation.x=0.45;grip.add(thumb);
+    for(let k=0;k<3;k++){
+      const f=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.042,0.1),skin);
+      f.position.set(0,0.048-k*0.048,-0.055);grip.add(f);
+    }
+    hands.push(grip);
+    /* the arm: a sleeve from the shoulder, aimed at wherever the hand has got to */
+    const arm=new THREE.Group();
+    arm.position.set(0.92+h.sx*0.36,2.37,-1.21);seat.add(arm);
+    const fore=new THREE.Mesh(new THREE.CylinderGeometry(0.088,0.072,1,8),sleeve);
+    fore.rotation.x=Math.PI/2;arm.add(fore);
+    const cuff=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.075,0.07,7),
+      IM(0xD8D2C4));
+    cuff.rotation.x=Math.PI/2;arm.add(cuff);
+    arms.push({arm,fore,cuff});
+  }
+
+  /* ---- the instruments. One needle, and it means what it says. ---- */
+  {
+    const dial=tex((c,w,h)=>{
+      c.fillStyle='#141210';c.fillRect(0,0,w,h);
+      const cx=w*0.32,cy=h*0.52,r=h*0.40;
+      c.strokeStyle='#E8E2D2';c.lineWidth=3;
+      c.beginPath();c.arc(cx,cy,r,Math.PI*0.78,Math.PI*2.22);c.stroke();
+      c.fillStyle='#E8E2D2';c.font='bold 15px sans-serif';
+      c.textAlign='center';c.textBaseline='middle';
+      for(let i=0;i<=8;i++){
+        const a=Math.PI*0.78+(Math.PI*1.44)*i/8;
+        c.beginPath();
+        c.moveTo(cx+Math.cos(a)*r*0.82,cy+Math.sin(a)*r*0.82);
+        c.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);c.lineWidth=i%2?2:4;c.stroke();
+        if(i%2===0) c.fillText(String(i*20),cx+Math.cos(a)*r*0.62,cy+Math.sin(a)*r*0.62);
+      }
+      c.font='bold 11px sans-serif';c.fillStyle='rgba(232,226,210,.6)';
+      c.fillText('km/h',cx,cy+r*0.42);
+      /* the fuel gauge, and the lamp that has been on for a week */
+      const fx=w*0.74;
+      c.strokeStyle='#E8E2D2';c.lineWidth=3;
+      c.beginPath();c.arc(fx,cy,h*0.26,Math.PI*0.9,Math.PI*2.1);c.stroke();
+      c.fillStyle='#E8C23A';c.font='bold 13px sans-serif';c.fillText('E',fx-h*0.2,cy+h*0.1);
+      c.fillText('F',fx+h*0.2,cy+h*0.1);
+      c.fillStyle='#C24030';c.beginPath();c.arc(fx,cy+h*0.3,5,0,6.29);c.fill();
+    },320,120);
+    const face=new THREE.Mesh(new THREE.PlaneGeometry(0.86,0.32),
+      dimAtNight(new THREE.MeshBasicMaterial({map:dial}),0.9));
+    face.position.set(0.92,2.34,-3.0);face.rotation.x=0.34;seat.add(face);
+    const nd=new THREE.Group();
+    nd.position.set(0.92-0.86*0.18,2.343,-2.995);nd.rotation.x=0.34;seat.add(nd);
+    const spin=new THREE.Group();nd.add(spin);
+    const needle=new THREE.Mesh(new THREE.BoxGeometry(0.012,0.12,0.006),
+      lampAtNight(new THREE.MeshBasicMaterial({color:0xE04A2A}),0xE04A2A,0xFF6A44));
+    needle.position.y=0.05;spin.add(needle);
+    const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,0.008,8),plastic);
+    cap.rotation.x=Math.PI/2;nd.add(cap);
+    CABREF.needle=spin;
+  }
+
+  /* ---- the tape deck: the thing this whole journey is actually about ---- */
+  {
+    const box=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.24,0.1),IM(0x17161A));
+    box.position.set(-0.18,2.34,-3.0);seat.add(box);
+    const disp=new THREE.Mesh(new THREE.PlaneGeometry(0.3,0.09),
+      lampAtNight(new THREE.MeshBasicMaterial({color:0x2A6E4A}),0x2A6E4A,0x4AE08A));
+    disp.position.set(-0.28,2.38,-2.94);seat.add(disp);
+    for(let i=0;i<5;i++){                 /* the level meter jumping with the song */
+      const b=new THREE.Mesh(new THREE.BoxGeometry(0.022,0.05,0.004),
+        lampAtNight(new THREE.MeshBasicMaterial({color:0x6ADFA0}),0x3A9A68,0x8AFFC0));
+      b.position.set(-0.36+i*0.032,2.35,-2.937);
+      seat.add(b);CABREF.meter.push(b);
+    }
+    for(const sx of [0.02,0.09]){
+      const k=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,0.03,10),steelC);
+      k.rotation.x=Math.PI/2;k.position.set(sx,2.3,-2.94);seat.add(k);
+    }
+    const slot=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.02,0.01),IM(0x0A0A0C));
+    slot.position.set(-0.28,2.28,-2.944);seat.add(slot);
+  }
+
+  /* ---- Ganesh on the dash, with a tika, because nobody sets off without ---- */
+  {
+    const g=new THREE.Group();g.position.set(-1.02,2.68,-3.12);seat.add(g);
+    const plinth=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.12,0.05,10),brassC);
+    g.add(plinth);
+    const body=new THREE.Mesh(new THREE.SphereGeometry(0.09,9,8),brassC);
+    body.position.y=0.11;body.scale.y=1.15;g.add(body);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(0.062,9,8),brassC);
+    head.position.y=0.235;g.add(head);
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.016,0.022,0.09,6),brassC);
+    trunk.position.set(0,0.2,0.055);trunk.rotation.x=0.5;g.add(trunk);
+    for(const sx of [-1,1]){
+      const ear=new THREE.Mesh(new THREE.SphereGeometry(0.042,8,7),brassC);
+      ear.position.set(sx*0.055,0.245,-0.01);ear.scale.set(0.45,1,0.8);g.add(ear);
+    }
+    const tika=new THREE.Mesh(new THREE.SphereGeometry(0.018,7,6),IM(0xC01818));
+    tika.position.set(0,0.27,0.05);tika.scale.z=0.4;g.add(tika);
+    /* and the marigold at his feet */
+    for(let i=0;i<7;i++){
+      const f=new THREE.Mesh(new THREE.SphereGeometry(0.022,6,5),
+        IM(i%2?0xE8850E:0xF0B41C));
+      const a=i/7*6.28;
+      f.position.set(Math.cos(a)*0.11,0.03,Math.sin(a)*0.11);g.add(f);
+    }
+  }
+
+  /* ---- the mirror, and everything hanging off it: sayapatri for Dashain and
+     a mala that has been there a great deal longer ---- */
+  {
+    const mir=new THREE.Group();mir.position.set(0,3.46,-3.1);cab.add(mir);
+    const arm2=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.16,6),plastic);
+    arm2.rotation.x=0.7;arm2.position.z=-0.06;mir.add(arm2);
+    const shell=new THREE.Mesh(new THREE.BoxGeometry(0.52,0.12,0.05),plastic);
+    shell.position.y=-0.1;mir.add(shell);
+    const glassM=new THREE.Mesh(new THREE.PlaneGeometry(0.46,0.085),
+      new THREE.MeshPhongMaterial({color:0x50606E,shininess:60,specular:0xBFD4E4}));
+    glassM.position.set(0,-0.1,0.026);mir.add(glassM);
+
+    /* the garland: a loop of flowers, hung off the mirror and free to swing */
+    const sway=new THREE.Group();sway.position.set(-0.13,-0.1,0.02);mir.add(sway);
+    const N=17;
+    for(let i=0;i<N;i++){
+      const t=i/N*Math.PI*2;
+      const f=new THREE.Mesh(new THREE.SphereGeometry(0.026+ (i%3)*0.004,7,6),
+        IM([0xE8850E,0xF0B41C,0xE86A0E][i%3]));
+      /* a closed loop, over the stem and down: long, narrow, and swinging */
+      f.position.set(Math.sin(t)*0.075,-0.15-Math.cos(t)*0.145,Math.sin(t*2)*0.012);
+      sway.add(f);
+    }
+    CABREF.garland=sway;
+    const mala=new THREE.Group();mala.position.set(0.12,-0.1,0.03);mir.add(mala);
+    for(let i=0;i<15;i++){
+      const t=i/15*Math.PI*2;
+      const b=new THREE.Mesh(new THREE.SphereGeometry(0.015,6,5),IM(0x4A2A18));
+      b.position.set(Math.sin(t)*0.045,-0.1-Math.cos(t)*0.1,0);
+      mala.add(b);
+    }
+    /* and the tassel on the end of it */
+    const tas=new THREE.Mesh(new THREE.ConeGeometry(0.022,0.07,7),IM(0xC0392B));
+    tas.position.set(0,-0.23,0);tas.rotation.x=Math.PI;mala.add(tas);
+    CABREF.mala=mala;
+  }
+
+  /* ---- the jhalar. Every micro on the road has this, and it is the first
+     thing that moves when he turns in. ---- */
+  {
+    const COL=[0xD8382A,0xE8C23A,0x2E7BD4,0xF2F2F2,0x1E9E52,0xE85C9C];
+    for(let i=0;i<21;i++){
+      const w=0.115,h=0.13+ (i%3)*0.025;
+      const g=new THREE.Group();
+      g.position.set(-1.34+i*0.134,3.62,-3.24);cab.add(g);
+      const f=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
+        new THREE.MeshPhongMaterial({color:COL[i%COL.length],
+          side:THREE.DoubleSide,flatShading:true,shininess:0}));
+      f.position.y=-h/2;g.add(f);
+      CABREF.fringe.push({g,ph:i*0.7});
+    }
+    /* and the slogan across the top of the glass, facing in at him */
+    const sl=tex((c,w,h)=>{
+      c.fillStyle='#0E7A3C';c.fillRect(0,0,w,h);
+      c.strokeStyle='#E8C23A';c.lineWidth=5;c.strokeRect(4,4,w-8,h-8);
+      c.fillStyle='#F6EFD8';c.textAlign='center';c.textBaseline='middle';
+      c.font='bold 42px sans-serif';c.fillText('आमा बाबुको आशिर्वाद',w/2,h*0.5);
+    },420,80);
+    const sb=new THREE.Mesh(new THREE.PlaneGeometry(1.05,0.2),
+      dimAtNight(new THREE.MeshBasicMaterial({map:sl}),0.7));
+    sb.position.set(0.1,3.42,-3.26);cab.add(sb);
+  }
+
+  /* ---- the gear lever, and his own lap and legs under it ---- */
+  {
+    const g=new THREE.Group();g.position.set(0.34,1.86,-2.28);cab.add(g);
+    const stick=new THREE.Mesh(new THREE.CylinderGeometry(0.026,0.034,0.4,7),IM(0x55504A));
+    stick.position.y=0.2;g.add(stick);
+    const knob=new THREE.Mesh(new THREE.SphereGeometry(0.058,9,8),IM(0x1A1815));
+    knob.position.y=0.42;g.add(knob);
+    const boot=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.1,0.12,8),vinyl);
+    g.add(boot);
+    /* and the handbrake beside it, which is what actually holds this thing */
+    const hb=new THREE.Group();hb.position.set(0.34,1.9,-1.9);cab.add(hb);
+    const lever=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,0.44),IM(0x55504A));
+    lever.position.set(0,0.1,0.1);lever.rotation.x=-0.5;hb.add(lever);
+    const grip2=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.14,8),IM(0x1A1815));
+    grip2.rotation.x=1.07;grip2.position.set(0,0.22,0.28);hb.add(grip2);
+    CABREF.gear=g;
+    /* the seat, which is mostly foam and tape by now, and as much of himself
+       as he can see from behind the wheel: a lap and two knees */
+    const cush=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.22,0.86),IM(0x4A3E36));
+    cush.position.set(0.92,2.02,-0.95);cab.add(cush);
+    const back=new THREE.Mesh(new THREE.BoxGeometry(0.9,1.1,0.18),IM(0x4A3E36));
+    back.position.set(0.92,2.62,-0.5);back.rotation.x=-0.13;cab.add(back);
+    const lap=new THREE.Mesh(new THREE.BoxGeometry(0.64,0.24,0.86),IM(0x35322C));
+    lap.position.set(0.92,2.25,-1.5);cab.add(lap);
+    for(const sx of [-0.17,0.17]){
+      const leg=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.22,1.0),IM(0x35322C));
+      leg.position.set(0.92+sx,2.1,-2.2);leg.rotation.x=0.26;cab.add(leg);
+    }
+  }
+
+  /* the wipers, parked, seen through the glass from in here */
+  for(const sx of [-0.7,0.7]){
+    const w=new THREE.Mesh(new THREE.BoxGeometry(1.3,0.05,0.05),IM(0x1A1A1C));
+    w.position.set(sx,2.66,-3.56);w.rotation.z=sx>0?0.1:-0.1;cab.add(w);
+  }
+  CABREF.group=cab;
+  CABREF.wheel=wheel;
+  CABREF.hands=hands;
+  CABREF.arms=arms;
+  /* Sitting in it means looking out through the screen, so the glass stops
+     being a dark panel and starts being glass. It keeps its depth to itself
+     while it does that, or every lamp and glow behind it disappears. */
+  applySeat=on=>{
+    cab.visible=on;
+    microGlass.transparent=on;
+    microGlass.opacity=on?0.16:1;
+    microGlass.depthWrite=!on;
+    microGlass.needsUpdate=true;
+  };
+}
 scene.add(micro);
 
 /* ============================================================
@@ -1108,6 +1822,106 @@ function roadside(u,off){
 function facing(group,at,target){        /* +Z of the group looks at target */
   group.position.copy(at);
   group.lookAt(target.x,at.y,target.z);
+}
+
+/* ---------- HOW A VEHICLE SITS ON THIS ROAD. Nothing with a wheelbase follows
+   the tarmac point by point: it bridges between its axles. So the heading is
+   the line from the back wheels to the front ones — not a point somewhere up
+   the road, which is what makes a body swing about like a toy — the pitch is
+   whatever those two ends are doing, and the floor sits at the mean of them,
+   which is why a crest lifts the nose before the back end knows about it and a
+   dip drops the whole body into it. On an ukalo the nose is up, on an oralo it
+   is down, and the body arrives at each of those a beat late, on its springs.
+   Used by the micro and by everything else on the road, so they all behave. ---------- */
+const PS_F=new THREE.Vector3(),PS_R=new THREE.Vector3(),PS_M=new THREE.Vector3(),
+      PS_D=new THREE.Vector3(),PS_S=new THREE.Vector3(),
+      PS_T1=new THREE.Vector3(),PS_T2=new THREE.Vector3(),
+      PS_E=new THREE.Euler(0,0,0,'YXZ');
+const PS={at:PS_M,yaw:0,pitch:0};
+/* u is the middle of the wheelbase; dir is +1 the way the loop runs, -1 back */
+function roadPose(u,dir,base){
+  const hw=base*0.5/LEN0*dir;
+  PS_F.copy(curve.getPointAt(((u+hw)%1+1)%1));
+  PS_R.copy(curve.getPointAt(((u-hw)%1+1)%1));
+  PS_M.copy(PS_F).add(PS_R).multiplyScalar(0.5);
+  PS_D.subVectors(PS_F,PS_R);
+  const flat=Math.hypot(PS_D.x,PS_D.z)||1e-6;
+  PS.yaw=Math.atan2(-PS_D.x,-PS_D.z);   /* the body faces -Z, so both terms negate */
+  PS.pitch=Math.atan2(PS_D.y,flat);
+  return PS;
+}
+/* how hard the road is turning under it, signed the way the vehicle feels it:
+   positive means the bend goes to the driver's right */
+function roadBend(u,dir){
+  const d=7/LEN0;
+  PS_T1.copy(curve.getTangentAt(((u-d)%1+1)%1));
+  PS_T2.copy(curve.getTangentAt(((u+d)%1+1)%1));
+  PS_S.set(-PS_T1.z,0,PS_T1.x).normalize();
+  return dir*((PS_T2.x-PS_T1.x)*PS_S.x+(PS_T2.z-PS_T1.z)*PS_S.z)/14;
+}
+/* a body on springs: it chases the attitude the road is asking for, and
+   overshoots it a little, which is the whole difference between a vehicle and
+   a decal. f is how quickly it answers, z how heavily it is damped. */
+function sprung(st,target,f,z,dt){
+  const w=6.283*f;
+  st.v+=(target-st.x)*w*w*dt-st.v*2*z*w*dt;
+  st.x+=st.v*dt;
+  return st.x;
+}
+
+/* ============================================================
+   SOLID THINGS. Nothing on this road is a ghost. What stands on the ground
+   takes up ground, and anybody walking or driving has to go round it.
+
+   There is no physics engine here and there does not need to be one: every
+   object in this scene is either a body standing on a footprint, which is a
+   circle, or a vehicle on a road, which is a length of the road and a width
+   across it. Circles keep people out of walls and off the bhir; the road model
+   keeps micros out of each other and out of the machine working the pahiro.
+   ============================================================ */
+const SOLIDS=[];
+const SB_W=new THREE.Vector3();      /* scratch, for going in and out of world space */
+/* a footprint on the ground. Height never comes into it - nothing here flies */
+function solid(x,z,r){const s={x,z,r};SOLIDS.push(s);return s;}
+/* while the scene is being built: has somebody already taken this ground? */
+function spotFree(x,z,r){
+  for(let i=0;i<SOLIDS.length;i++){
+    const o=SOLIDS[i],dx=x-o.x,dz=z-o.z,rr=o.r+r;
+    if(dx*dx+dz*dz<rr*rr) return false;
+  }
+  return true;
+}
+/* and once it is running: shove a body back out of whatever it has walked
+   into. Two passes, because backing out of one wall can put you into the next */
+function unstick(p,br){
+  let moved=false;
+  for(let pass=0;pass<2;pass++){
+    let worst=null,deep=0,wd=0;
+    for(let i=0;i<SOLIDS.length;i++){
+      const o=SOLIDS[i],dx=p.x-o.x,dz=p.z-o.z,rr=o.r+br,d2=dx*dx+dz*dz;
+      if(d2>=rr*rr) continue;
+      const d=Math.sqrt(Math.max(d2,1e-8));
+      if(rr-d>deep){deep=rr-d;worst=o;wd=d;}
+    }
+    if(!worst) break;
+    const dx=p.x-worst.x,dz=p.z-worst.z,rr=worst.r+br;
+    if(wd<1e-6){p.x+=rr;}                       /* dead centre: any way out will do */
+    else{p.x=worst.x+dx/wd*rr;p.z=worst.z+dz/wd*rr;}
+    moved=true;
+  }
+  return moved;
+}
+/* Keep somebody on the shelf the road is cut into. Past one edge of it is the
+   cut face and past the other is fifty metres of nothing, and a person on foot
+   will walk into neither. */
+function onBench(p,margin){
+  const n=nearRoad(p.x,p.z);
+  const lim=(n.s>=0?BENCH_H:BENCH_V)+n.bw-(margin===undefined?0.7:margin);
+  const over=Math.abs(n.s)-lim;
+  if(over<=0) return false;
+  const back=over*(n.s>0?1:-1);
+  p.x-=n.nx*back;p.z-=n.nz*back;
+  return true;
 }
 
 /* a face that blinks and opens its mouth — drawn small, animated per person */
@@ -1352,6 +2166,7 @@ const PASALS=[];
        nudged to the shop's side, so both micro and pasal are in frame */
     const camAt=p.clone().addScaledVector(side,sgn*4.5);
     const lookAt=at.clone().addScaledVector(side,-sgn*2.2);
+    solid(at.x,at.z,3.1);                  /* the shop is a shop, not a mist */
     PASALS.push({u,kind:'chiya',pos:at.clone(),camAt,lookAt,sgn,sippers,steam});
   });
 }
@@ -1403,6 +2218,7 @@ const PASALS=[];
     /* a stop in its own right — the micro pulls over and everybody gets down */
     const camAt=p.clone().addScaledVector(side,sgn*4.5);
     const lookAt=at.clone().addScaledVector(side,-sgn*2.2);
+    solid(at.x,at.z,2.0);
     PASALS.push({u,kind:'sauch',pos:at.clone(),camAt,lookAt,sgn,sippers:[],steam:[]});
   });
 }
@@ -1500,6 +2316,7 @@ const PASALS=[];
     /* these are proper stops too — the micro parks for dal bhat */
     const camAt=p.clone().addScaledVector(side,sgn*4.5);
     const lookAt=at.clone().addScaledVector(side,-sgn*2.6);
+    solid(at.x,at.z,3.8);
     PASALS.push({u,kind:'thakali',pos:at.clone(),camAt,lookAt,sgn,sippers:diners,steam:[]});
   });
 }
@@ -1531,6 +2348,8 @@ const HOLES=[];
    the road over it. The gorge is cut into the terrain by terrainY(), so the
    deck, the piers and the water all agree on where the ground went. ---------- */
 let riverFlow=null;                    /* the water texture, scrolled downstream */
+let jharana=null;                      /* and the one on the waterfall, scrolled faster */
+const SPRAY=[];                        /* the spray at the foot of it, turned to camera */
 const BR_HS=33/LEN0;                   /* half the deck, in curve units */
 {
   const SIDED=(c)=>new THREE.MeshPhongMaterial({color:c,flatShading:true,
@@ -1655,7 +2474,7 @@ const BR_HS=33/LEN0;                   /* half the deck, in curve units */
     scene.add(g);
   }
 
-  /* the water: a ribbon down the channel whose ripples scroll downstream */
+  /* the ripples themselves, drawn once and scrolled downstream from here on */
   const rip=tex((c,w,h)=>{
     const g=c.createLinearGradient(0,0,0,h);
     g.addColorStop(0,'#2C6C86');g.addColorStop(.5,'#3C84A0');g.addColorStop(1,'#2C6C86');
@@ -1668,14 +2487,23 @@ const BR_HS=33/LEN0;                   /* half the deck, in curve units */
   },256,256);
   rip.wrapS=rip.wrapT=THREE.RepeatWrapping;rip.repeat.set(1.6,16);
   riverFlow=rip;
+
+  /* The water, whose ripples scroll downstream. It comes down off the hillside
+     on the uphill side of the pul only: on the other side the bhir has taken
+     the ground away, so a few metres past the deck the stream simply goes over
+     the edge — see the jharana below. */
   {
-    const N=96,pos=[],uv=[],idx=[],half=RIV_W+3.6;
+    const N=96,pos=[],uv=[],idx=[],A0=-14;
     for(let i=0;i<=N;i++){
-      const a=-RIV_RUN+2*RIV_RUN*i/N;
+      const a=A0+(RIV_RUN-A0)*i/N;
       const wig=Math.sin(a*0.0115)*14+Math.sin(a*0.026)*6;
       const cx=BR_P.x+BR_A.x*a+BR_T.x*wig, cz=BR_P.z+BR_A.z*a+BR_T.z*wig;
-      pos.push(cx-BR_T.x*half,WATER_Y,cz-BR_T.z*half,
-               cx+BR_T.x*half,WATER_Y,cz+BR_T.z*half);
+      const wy=kholaY(a);
+      /* it gathers as it comes down: a thread at the top, a stream at the pul */
+      const half=(RIV_W*0.46)*(1-0.55*Math.max(0,a)/RIV_RUN)
+                +Math.sin(a*0.05)*0.9;
+      pos.push(cx-BR_T.x*half,wy,cz-BR_T.z*half,
+               cx+BR_T.x*half,wy,cz+BR_T.z*half);
       uv.push(0,i/N,1,i/N);
       if(i<N){const o=i*2;idx.push(o,o+1,o+2,o+1,o+3,o+2);}
     }
@@ -1689,15 +2517,77 @@ const BR_HS=33/LEN0;                   /* half the deck, in curve units */
 
   /* boulders in the stream, the way every khola has them */
   for(let i=0;i<(LOW?9:16);i++){
-    const a=-RIV_RUN*0.86+Math.random()*RIV_RUN*1.72;
+    const a=-8+Math.random()*RIV_RUN*0.92;
     const wig=Math.sin(a*0.0115)*14+Math.sin(a*0.026)*6;
     const off=(Math.random()-0.5)*RIV_W*1.8;
     const s=0.7+Math.random()*1.9;
     const b=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),MAT(0x9A9184));
-    b.position.set(BR_P.x+BR_A.x*a+BR_T.x*(wig+off),WATER_Y-0.4+s*0.45,
+    b.position.set(BR_P.x+BR_A.x*a+BR_T.x*(wig+off),kholaY(a)-0.4+s*0.45,
                    BR_P.z+BR_A.z*a+BR_T.z*(wig+off));
     b.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
     b.scale.y=0.68;scene.add(b);
+  }
+
+  /* ---- THE JHARANA. Past the deck there is no more valley floor for the
+     stream to run along, so it goes over the lip of the bhir and falls the
+     forty-odd metres to the khola in the bottom, in one white chute down the
+     face. This is why the pul is where it is. ---- */
+  {
+    const foam=tex((c,w,h)=>{
+      const g=c.createLinearGradient(0,0,w,0);
+      g.addColorStop(0,'rgba(226,240,248,.10)');g.addColorStop(.22,'rgba(246,252,255,.92)');
+      g.addColorStop(.5,'rgba(255,255,255,.98)');g.addColorStop(.78,'rgba(240,250,255,.9)');
+      g.addColorStop(1,'rgba(226,240,248,.10)');
+      c.fillStyle=g;c.fillRect(0,0,w,h);
+      c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=3;
+      for(let i=0;i<40;i++){                       /* the threads of falling water */
+        const x=8+Math.random()*(w-16),y=Math.random()*h,l=24+Math.random()*90;
+        c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+4,y+l*0.5,x,y+l);c.stroke();
+      }
+    },96,256);
+    foam.wrapS=foam.wrapT=THREE.RepeatWrapping;foam.repeat.set(1,3);
+    const fmat=new THREE.MeshPhongMaterial({map:foam,transparent:true,opacity:0.93,
+      shininess:100,specular:0xFFFFFF,side:THREE.DoubleSide,depthWrite:false});
+    jharana=foam;                                  /* the frame scrolls it downwards */
+    /* it follows the face down: sampled straight off the terrain, so it stays
+       against the rock however steep the bhir happens to be here */
+    const pos=[],uv=[],idx=[],M=26;
+    let run=0,prev=null;
+    for(let i=0;i<=M;i++){
+      const q=Math.pow(i/M,0.72)*96;               /* tight at the lip, long below */
+      const a=-14-q;
+      const cx=BR_P.x+BR_A.x*a,cz=BR_P.z+BR_A.z*a;
+      const gy=terrainY(cx,cz)+0.35;
+      const wide=1.9+q*0.042;                      /* it spreads as it falls */
+      pos.push(cx-BR_T.x*wide,gy,cz-BR_T.z*wide, cx+BR_T.x*wide,gy,cz+BR_T.z*wide);
+      if(prev) run+=Math.hypot(cx-prev.x,gy-prev.y,cz-prev.z);
+      prev={x:cx,y:gy,z:cz};
+      uv.push(0,run/26,1,run/26);
+      if(i<M){const o=i*2;idx.push(o,o+1,o+2,o+1,o+3,o+2);}
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+    g.setIndex(idx);g.computeVertexNormals();
+    const jm=new THREE.Mesh(g,fmat);jm.renderOrder=2;scene.add(jm);
+    /* spray where it lands, and a puff of it at the lip */
+    const mist=tex((c,w,h)=>{
+      const g2=c.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);
+      g2.addColorStop(0,'rgba(255,255,255,.85)');g2.addColorStop(.5,'rgba(232,244,252,.35)');
+      g2.addColorStop(1,'rgba(226,240,250,0)');
+      c.fillStyle=g2;c.fillRect(0,0,w,h);
+    },64,64);
+    const mm=new THREE.MeshBasicMaterial({map:mist,transparent:true,opacity:0.6,
+      depthWrite:false,side:THREE.DoubleSide});
+    for(const k of [0,1,2,3]){
+      const q=k===0?2:80+k*7;
+      const a=-14-q;
+      const cx=BR_P.x+BR_A.x*a,cz=BR_P.z+BR_A.z*a;
+      const s=k===0?5:9+k*3;
+      const pf=new THREE.Mesh(new THREE.PlaneGeometry(s,s*0.8),mm);
+      pf.position.set(cx,terrainY(cx,cz)+s*0.3,cz);
+      SPRAY.push(pf);scene.add(pf);
+    }
   }
 
   /* the name board, facing the traffic coming up to the crossing */
@@ -1725,6 +2615,390 @@ const BR_HS=33/LEN0;                   /* half the deck, in curve units */
   /* the expansion joints at either end give the deck its two little knocks */
   for(const sx of [-1,1])
     HOLES.push({d:(((BRIDGE_U+sx*BR_HS)*LEN0)%LEN0+LEN0)%LEN0,jolt:0.055});
+}
+
+/* ---------- THE KHOLA IN THE BOTTOM. The road spends the whole day looking
+   down at this: a hill river in Dashain, past the worst of the monsoon and
+   running jade-grey over its own gravel, braided round the bars it built, and
+   white wherever the bed steepens. It is drawn where the terrain already put
+   the channel — the water level is read off the same road height the trough
+   was cut from, so it cannot float above its bed or sink under it. ---------- */
+let bigFlow=null,bigFoam=null;         /* scrolled downstream every frame */
+{
+  /* the surface: streaks drawn along the flow, so scrolling it reads as current
+     rather than as a moving pattern */
+  const wtex=tex((c,w,h)=>{
+    const g=c.createLinearGradient(0,0,w,0);
+    g.addColorStop(0,'#3E6A76');g.addColorStop(.28,'#54889A');
+    g.addColorStop(.55,'#63A0AC');g.addColorStop(.8,'#4A7C8C');g.addColorStop(1,'#38626E');
+    c.fillStyle=g;c.fillRect(0,0,w,h);
+    for(let i=0;i<70;i++){                          /* the long silty streaks */
+      c.strokeStyle='rgba(206,232,238,'+(0.08+Math.random()*0.20).toFixed(2)+')';
+      c.lineWidth=1+Math.random()*4;
+      const x=Math.random()*w,y=Math.random()*h,l=40+Math.random()*180;
+      c.beginPath();c.moveTo(x,y);
+      c.bezierCurveTo(x+7,y+l*0.33,x-7,y+l*0.66,x+2,y+l);c.stroke();
+    }
+    for(let i=0;i<22;i++){                          /* and the odd broken crest */
+      c.strokeStyle='rgba(240,251,255,.5)';c.lineWidth=2.4;
+      const x=Math.random()*w,y=Math.random()*h,l=8+Math.random()*22;
+      c.beginPath();c.moveTo(x-l,y);c.quadraticCurveTo(x,y-4,x+l,y);c.stroke();
+    }
+  },256,512);
+  wtex.wrapS=wtex.wrapT=THREE.RepeatWrapping;wtex.repeat.set(1,26);
+  bigFlow=wtex;
+
+  const N=LOW?300:480;
+  const pos=[],uv=[],col=[],idx=[];
+  const jade=new THREE.Color(0x63A0AC),white=new THREE.Color(0xEAF6FA);
+  const cw=new THREE.Color();
+  const mid=[];                        /* kept, for the boulders and the radar */
+  let run=0,prevY=null,prevP=null;
+  for(let i=0;i<=N;i++){
+    const u=(i%N)/N;
+    const p=curve.getPointAt(u),tan=curve.getTangentAt(u);
+    const nl=Math.hypot(tan.x,tan.z),sx=-tan.z/nl,sz=tan.x/nl;
+    /* it wanders across its bed, the way a river with gravel to move does */
+    const th=u*Math.PI*2;
+    const wob=Math.sin(th*7)*7.5+Math.sin(th*13+1.2)*4.2+Math.sin(th*23+0.4)*1.6;
+    let off=RIV_OFF+wob;
+    let cx=p.x-sx*off,cz=p.z-sz*off;
+    /* and then it is nudged back until it is genuinely in the channel: on the
+       inside of a bend the offset alone does not land where the trough is */
+    for(let k=0;k<2;k++){
+      const nr=nearRoad(cx,cz);
+      off+=RIV_OFF+wob-nr.d;
+      cx=p.x-sx*off;cz=p.z-sz*off;
+    }
+    const nr=nearRoad(cx,cz);
+    const wy=nr.y-0.14-BHIR+0.55;      /* the same reference the trough was cut from */
+    const half=7.5+Math.sin(th*11+0.6)*3.2+Math.sin(th*19)*1.7;
+    if(prevP) run+=Math.hypot(cx-prevP.x,cz-prevP.z);
+    /* where the bed tips, the water breaks: that is where the white is */
+    const drop=prevY===null?0:(prevY-wy)/Math.max(1,Math.hypot(cx-(prevP?prevP.x:cx),cz-(prevP?prevP.z:cz)));
+    const foam=Math.min(1,sstep(0.012,0.065,Math.abs(drop))+sstep(7.4,5.6,half)*0.5);
+    prevY=wy;prevP={x:cx,z:cz};
+    mid.push({x:cx,z:cz,y:wy,half,foam,u});
+    cw.copy(jade).lerp(white,foam*0.62);
+    for(const s of [-1,1]){
+      pos.push(cx+sx*s*half,wy,cz+sz*s*half);
+      uv.push(s<0?0:1,run/34);
+      col.push(cw.r,cw.g,cw.b);
+    }
+    if(i<N){const o=i*2;idx.push(o,o+1,o+2,o+1,o+3,o+2);}
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  g.setIndex(idx);g.computeVertexNormals();
+  scene.add(new THREE.Mesh(g,new THREE.MeshPhongMaterial({map:wtex,vertexColors:true,
+    transparent:true,opacity:0.94,shininess:90,specular:0xA8DCE8,
+    side:THREE.DoubleSide})));
+
+  /* the whole surface again, a hair above and running faster: two speeds is
+     what stops a big sheet of water looking like a conveyor belt */
+  {
+    const ftex=tex((c,w,h)=>{
+      c.clearRect(0,0,w,h);
+      c.strokeStyle='rgba(255,255,255,.42)';
+      for(let i=0;i<54;i++){
+        c.lineWidth=1+Math.random()*3;
+        const x=Math.random()*w,y=Math.random()*h,l=30+Math.random()*150;
+        c.beginPath();c.moveTo(x,y);
+        c.bezierCurveTo(x+9,y+l*0.4,x-9,y+l*0.7,x+3,y+l);c.stroke();
+      }
+    },256,512);
+    ftex.wrapS=ftex.wrapT=THREE.RepeatWrapping;ftex.repeat.set(1,17);
+    bigFoam=ftex;
+    const g2=g.clone();
+    const pp=g2.attributes.position;
+    for(let i=0;i<pp.count;i++) pp.setY(i,pp.getY(i)+0.16);
+    const m=new THREE.Mesh(g2,new THREE.MeshBasicMaterial({map:ftex,transparent:true,
+      opacity:0.30,depthWrite:false,side:THREE.DoubleSide}));
+    m.renderOrder=1;scene.add(m);
+  }
+
+  /* boulders standing in it, and the white water piled up behind each one */
+  {
+    const NB=LOW?46:96;
+    const rock=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),
+      MAT(0x8A857C),NB);
+    const m4=new THREE.Matrix4(),q4=new THREE.Quaternion(),sc=new THREE.Vector3(),
+          pv=new THREE.Vector3(),ev=new THREE.Euler();
+    const spray=tex((c,w,h)=>{
+      const g3=c.createRadialGradient(w/2,h*0.55,0,w/2,h*0.55,w/2);
+      g3.addColorStop(0,'rgba(255,255,255,.9)');g3.addColorStop(.45,'rgba(230,246,252,.42)');
+      g3.addColorStop(1,'rgba(226,242,250,0)');
+      c.fillStyle=g3;c.fillRect(0,0,w,h);
+    },64,64);
+    const smat=new THREE.MeshBasicMaterial({map:spray,transparent:true,opacity:0.72,
+      depthWrite:false,side:THREE.DoubleSide});
+    for(let i=0;i<NB;i++){
+      const seg=mid[(Math.random()*mid.length)|0];
+      const across=(Math.random()-0.5)*seg.half*1.7;
+      const tanl=curve.getTangentAt(seg.u);
+      const nl=Math.hypot(tanl.x,tanl.z),sx=-tanl.z/nl,sz=tanl.x/nl;
+      const bx=seg.x+sx*across,bz=seg.z+sz*across;
+      const s=0.7+Math.random()*2.3;
+      ev.set(Math.random()*3,Math.random()*3,Math.random()*3);
+      q4.setFromEuler(ev);
+      pv.set(bx,seg.y-0.5+s*0.5,bz);
+      sc.set(s,s*0.62,s);
+      rock.setMatrixAt(i,m4.compose(pv,q4,sc));
+      /* the pillow of white water on the upstream face of the bigger ones */
+      if(s>1.5&&SPRAY.length<(LOW?18:34)){
+        const w2=s*2.6;
+        const pf=new THREE.Mesh(new THREE.PlaneGeometry(w2,w2*0.55),smat);
+        pf.position.set(bx,seg.y+0.5,bz);
+        SPRAY.push(pf);scene.add(pf);
+      }
+    }
+    scene.add(rock);
+  }
+
+  /* the radar gets it too, so the loop reads as a road above a river */
+  mapBig=mid.filter((_,i)=>i%6===0).map(m=>[m.x,m.z]);
+}
+
+/* ---------- WHAT HOLDS THE ROAD UP, AND WHAT KEEPS YOU ON IT. Cut a shelf into
+   a hillside and the hillside spends the rest of its life trying to come back
+   down onto it, so the uphill edge of every stretch is wire crates of river
+   stone with a lined drain in front of them, and the downhill edge is whatever
+   the division could afford that year: painted parapet stones on the ordinary
+   bends, steel on the ones that have already killed somebody, and reflector
+   posts in between. Nothing here is decoration — it is all the road being held
+   in place. ---------- */
+{
+  const STEP=2.6,NS=Math.max(60,Math.round(LEN0/STEP));
+  const S=[];
+  for(let i=0;i<NS;i++){
+    const u=i/NS;
+    const p=curve.getPointAt(u),tan=curve.getTangentAt(u);
+    const nl=Math.hypot(tan.x,tan.z);
+    const sx=-tan.z/nl,sz=tan.x/nl;
+    const w=widenAt(u),bh=BENCH_H+w,bv=BENCH_V+w;
+    const road=p.y-0.14;
+    /* How much hillside is standing over this stretch. Read from the same
+       smooth term the cut face is cut to, not from the finished ground: the
+       ground has gullies in it, and sampling those makes the wall come and go
+       every second crate instead of running in lengths. */
+    const cut=6.5+fbm(p.x*0.0075+70,p.z*0.0075+70)*11;
+    const bend=roadBend(u,1);
+    /* nothing stands on the deck of the pul, or in the gorge either side of it */
+    const onPul=Math.abs(((u-BRIDGE_U+1.5)%1)-0.5)<BR_HS*1.5;
+    S.push({u,p,sx,sz,bh,bv,w,road,cut,bend,onPul,
+            heading:Math.atan2(tan.x,tan.z)});
+  }
+  const q4=new THREE.Quaternion(),m4=new THREE.Matrix4(),
+        sc=new THREE.Vector3(1,1,1),pv=new THREE.Vector3(),ev=new THREE.Euler();
+  const yaw=(a)=>{ev.set(0,a,0,'YXZ');return q4.setFromEuler(ev);};
+  /* leaned back into the hill: a retaining wall is built with a batter on it */
+  const yawTilt=(a,tilt)=>{ev.set(0,a,tilt,'YXZ');return q4.setFromEuler(ev);};
+
+  /* ---- the gabions: wire crates of stone, stacked and stepped back into the
+     cut, run wherever there is enough hill above the road to need them ---- */
+  {
+    const gtex=tex((c,w,h)=>{
+      c.fillStyle='#7E786C';c.fillRect(0,0,w,h);
+      /* river stone, hand-packed: big pieces at the face, and every one of them
+         a slightly different grey because they came out of the khola */
+      for(let i=0;i<110;i++){
+        const r=9+Math.random()*17;
+        c.fillStyle=['#A49B8C','#B4AB9C','#8E8678','#C0B7A6','#7C756A','#9A9184'
+                    ][(Math.random()*6)|0];
+        c.beginPath();
+        c.ellipse(Math.random()*w,Math.random()*h,r,r*(0.62+Math.random()*0.45),
+                  Math.random()*3,0,6.29);c.fill();
+        c.strokeStyle='rgba(74,70,63,.35)';c.lineWidth=1.4;c.stroke();
+      }
+      c.strokeStyle='rgba(66,64,58,.42)';c.lineWidth=1.5;   /* the wire over them */
+      for(let x=-h;x<w+h;x+=17){
+        c.beginPath();c.moveTo(x,0);c.lineTo(x+h,h);c.stroke();
+        c.beginPath();c.moveTo(x+h,0);c.lineTo(x,h);c.stroke();
+      }
+      c.strokeStyle='rgba(48,46,42,.62)';c.lineWidth=3;c.strokeRect(1,1,w-2,h-2);
+    },128,64);
+    const gmat=new THREE.MeshPhongMaterial({map:gtex,flatShading:true,shininess:0});
+    const CR=LOW?1300:3000;
+    const crates=new THREE.InstancedMesh(new THREE.BoxGeometry(1.15,0.98,STEP*1.22),gmat,CR);
+    let n=0;
+    for(const s of S){
+      if(n+3>CR) break;
+      if(s.onPul) continue;
+      /* in runs, the way it is actually built: a length of wall, then a length
+         of bare cut where the hill has behaved itself */
+      const want=s.cut>8.6&&(Math.sin(s.u*Math.PI*2*9.3)+Math.sin(s.u*Math.PI*2*4.1+1.7))>-0.1;
+      if(!want) continue;
+      const courses=s.cut>14?4:(s.cut>11?3:2);
+      for(let k=0;k<courses;k++){
+        if(n>=CR) break;
+        /* each course steps back into the hill and sits on the one below */
+        const out=s.bh+0.2+k*0.42;
+        pv.set(s.p.x+s.sx*out,s.road+0.4+k*0.93,s.p.z+s.sz*out);
+        crates.setMatrixAt(n++,m4.compose(pv,yawTilt(s.heading,0.055),sc));
+      }
+    }
+    crates.count=n;scene.add(crates);
+  }
+
+  /* ---- the nali: the lined drain along the toe of the cut, which is where
+     the whole monsoon goes. A channel, not a stripe — you can see into it. ---- */
+  {
+    const cm=new THREE.MeshPhongMaterial({color:0xA6A094,flatShading:true,
+      shininess:0,side:THREE.DoubleSide});
+    const pos=[],idx=[];
+    /* across the ditch: a raised kerb on the road side, then the channel */
+    const LIP=[[-1.15,0],[-1.0,0.15],[-0.72,0.15],[-0.55,-0.72],
+               [0.55,-0.72],[0.78,0.06],[1.15,0.02]];
+    let ring=0;
+    for(let i=0;i<=NS;i++){
+      const s=S[i%NS];
+      const mid=s.bh-1.5;
+      for(const [a,dy] of LIP)
+        pos.push(s.p.x+s.sx*(mid+a),s.road+0.04+dy,s.p.z+s.sz*(mid+a));
+      if(i<NS&&!s.onPul&&!S[(i+1)%NS].onPul){
+        const o=ring*LIP.length,o2=o+LIP.length;
+        for(let k=0;k<LIP.length-1;k++) idx.push(o+k,o+k+1,o2+k, o+k+1,o2+k+1,o2+k);
+      }
+      ring++;
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    g.setIndex(idx);g.computeVertexNormals();
+    scene.add(new THREE.Mesh(g,cm));
+  }
+
+  /* ---- and the edge. Parapet stones, painted white with a black foot, are
+     what stands between the tyres and the bhir on most of this road ---- */
+  {
+    const ptex=tex((c,w,h)=>{
+      c.fillStyle='#E8E4D8';c.fillRect(0,0,w,h);
+      c.fillStyle='#26241F';c.fillRect(0,h*0.72,w,h*0.28);
+      c.fillStyle='rgba(120,112,96,.28)';                    /* dust up the sides */
+      for(let i=0;i<26;i++) c.fillRect(Math.random()*w,h*0.4+Math.random()*h*0.35,
+                                       2+Math.random()*7,2+Math.random()*4);
+    },32,64);
+    const pmat=dimAtNight(new THREE.MeshPhongMaterial({map:ptex,flatShading:true,
+      shininess:2}),0.55);
+    const NP=LOW?190:340;
+    const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(0.54,0.62,0.54),pmat,NP);
+    /* the reflector posts that fill in between them, which are all you can see
+       of the edge of the road once it is dark */
+    const NR=LOW?100:180;
+    const dp=new THREE.InstancedMesh(new THREE.CylinderGeometry(0.075,0.09,1.05,6),
+      dimAtNight(new THREE.MeshPhongMaterial({color:0xF2EDE0,flatShading:true,
+        shininess:0}),0.6),NR);
+    const refl=new THREE.InstancedMesh(new THREE.BoxGeometry(0.16,0.19,0.05),
+      lampAtNight(new THREE.MeshBasicMaterial({color:0xB03024}),0xB03024,0xFF6A48),NR);
+    let np=0,nr=0,since=99;
+    for(let i=0;i<S.length;i++){
+      const s=S[i];
+      if(s.onPul){since=99;continue;}
+      if(s.w>3){since=99;continue;}      /* a stop has ground, not a drop */
+      const stone=(Math.sin(s.u*Math.PI*2*6.7+0.9)+Math.sin(s.u*Math.PI*2*3.3))>-0.5;
+      const edge=Math.min(s.bv-0.6,7.2);
+      since+=STEP;
+      if(stone&&np<NP&&since>=4.6){
+        pv.set(s.p.x-s.sx*edge,s.road+0.31,s.p.z-s.sz*edge);
+        posts.setMatrixAt(np++,m4.compose(pv,yaw(s.heading),sc));
+        since=0;
+      }else if(!stone&&nr<NR&&since>=12){
+        pv.set(s.p.x-s.sx*edge,s.road+0.52,s.p.z-s.sz*edge);
+        dp.setMatrixAt(nr,m4.compose(pv,yaw(s.heading),sc));
+        /* the reflector faces back down the road, at the headlamps coming up */
+        pv.y=s.road+0.86;
+        refl.setMatrixAt(nr++,m4.compose(pv,yaw(s.heading),sc));
+        since=0;
+      }
+    }
+    posts.count=np;dp.count=nr;refl.count=nr;
+    scene.add(posts,dp,refl);
+  }
+
+  /* ---- steel, on the bends bad enough to have earned it ---- */
+  {
+    const steel=new THREE.MeshPhongMaterial({color:0xB6BAC0,flatShading:true,shininess:22});
+    const NG=LOW?110:200;
+    const rail=new THREE.InstancedMesh(new THREE.BoxGeometry(0.07,0.36,STEP*1.06),steel,NG);
+    const post=new THREE.InstancedMesh(new THREE.BoxGeometry(0.13,1.05,0.13),
+      new THREE.MeshPhongMaterial({color:0x8E939A,flatShading:true,shininess:0}),NG);
+    /* the sharpest four corners on the loop, and a length of barrier on each */
+    const order=S.map((s,i)=>({i,k:Math.abs(s.bend)})).sort((a,b)=>b.k-a.k);
+    const picked=[];
+    for(const o of order){
+      if(picked.length>=4) break;
+      if(picked.some(q=>Math.abs(q-o.i)<NS*0.08||Math.abs(q-o.i)>NS*0.92)) continue;
+      if(S[o.i].onPul) continue;
+      picked.push(o.i);
+    }
+    let n=0;
+    for(const c of picked) for(let d=-7;d<=7;d++){
+      const s=S[(c+d+NS)%NS];
+      if(s.onPul||s.w>3||n>=NG) continue;
+      const edge=Math.min(s.bv-0.6,7.3);
+      pv.set(s.p.x-s.sx*edge,s.road+0.52,s.p.z-s.sz*edge);
+      post.setMatrixAt(n,m4.compose(pv,yaw(s.heading),sc));
+      pv.y=s.road+0.78;
+      rail.setMatrixAt(n++,m4.compose(pv,yaw(s.heading),sc));
+    }
+    post.count=n;rail.count=n;
+    scene.add(post,rail);
+  }
+
+  /* ---- and what came down anyway: stone shed off the cut, swept to the side
+     but never quite taken away ---- */
+  {
+    const NK=LOW?90:200;
+    const deb=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),
+      MAT(0x82796D),NK);
+    let n=0;
+    for(let c=0;c<(LOW?7:13)&&n<NK;c++){
+      const s=S[((c*7+3)*97)%NS];
+      if(s.onPul) continue;
+      const many=6+((Math.random()*9)|0);
+      for(let k=0;k<many&&n<NK;k++){
+        const across=s.bh-1.9-Math.random()*2.6;      /* piled against the drain */
+        const along=(Math.random()-0.5)*13;
+        const t=curve.getTangentAt(s.u);
+        const px=s.p.x+s.sx*across+t.x*along, pz=s.p.z+s.sz*across+t.z*along;
+        const sz2=0.2+Math.random()*0.55;
+        ev.set(Math.random()*3,Math.random()*3,Math.random()*3);
+        pv.set(px,terrainY(px,pz)+sz2*0.4,pz);
+        deb.setMatrixAt(n++,m4.compose(pv,q4.setFromEuler(ev),
+          sc.set(sz2,sz2*0.7,sz2)));
+      }
+      sc.set(1,1,1);
+    }
+    deb.count=n;scene.add(deb);
+  }
+
+  /* ---- the tarmac as it actually is: patched, and patched over the patches ---- */
+  {
+    const NPT=LOW?90:190;
+    const pat=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),
+      new THREE.MeshLambertMaterial({color:0xffffff}),NPT);
+    const shade=new THREE.Color();
+    const tones=[0x1B1917,0x2F2A24,0x3E382F,0x232019];
+    let n=0;
+    for(let i=0;i<NPT;i++){
+      const s=S[(Math.random()*NS)|0];
+      if(s.onPul) continue;
+      const across=(Math.random()-0.5)*8.2;
+      const t=curve.getTangentAt(s.u);
+      const along=(Math.random()-0.5)*STEP;
+      const px=s.p.x+s.sx*across+t.x*along, pz=s.p.z+s.sz*across+t.z*along;
+      ev.set(-Math.PI/2,s.heading+(Math.random()-0.5)*0.5,0,'YXZ');
+      const w=1.1+Math.random()*3.4,l=1.4+Math.random()*5.5;
+      pv.set(px,s.p.y+0.115,pz);
+      pat.setMatrixAt(n,m4.compose(pv,q4.setFromEuler(ev),sc.set(w,l,1)));
+      shade.setHex(tones[(Math.random()*tones.length)|0]);
+      pat.setColorAt(n++,shade);
+    }
+    sc.set(1,1,1);
+    pat.count=n;if(pat.instanceColor)pat.instanceColor.needsUpdate=true;
+    scene.add(pat);
+  }
 }
 
 /* ---------- CHILDREN CROSSING — the micro waits ---------- */
@@ -1901,8 +3175,13 @@ function moveTraffic(dt,now){
     if(v.on) continue;
     v.wait-=dt;
     if(v.wait>0) continue;
+    /* Come onto the road at a place where there is road to come onto: two of
+       them arriving on the same few metres would spend the rest of the journey
+       stopped inside one another. */
+    let where=(dist+230+Math.random()*150)%LEN,tries=0;
+    while(tries++<8&&!roomAt(where,v)) where=(where+21)%LEN;
     v.on=true;v.g.visible=true;v.hold=false;
-    v.d=(dist+230+Math.random()*150)%LEN;          /* appear up the road */
+    v.d=where;
   }
 
   /* Half the carriageway is under the pahiro, so it runs one lane at a time.
@@ -1933,9 +3212,20 @@ function moveTraffic(dt,now){
 
   for(const v of TRAFFIC){
     if(!v.on) continue;
-    v.d=(v.d-v.speed*dt+LEN)%LEN;
+    /* the length of road in front of them, and how much of it they may use:
+       whatever is there - us, the vehicle in front, a child on the crossing -
+       they arrive behind it and not in it */
+    let step=v.speed*dt;
+    const clear=frontGap(v)-1.4;
+    if(step>clear) step=Math.max(0,clear);
+    for(const c of CROSSINGS){                     /* everybody stops for children */
+      if(!c.busy) continue;
+      const g=((((c.d-v.d)*-1)%LEN)+LEN)%LEN;
+      if(g<70) step=Math.min(step,Math.max(0,g-16));
+    }
+    v.d=(v.d-step+LEN)%LEN;
     const stop=line.get(v);
-    v.hold=false;
+    v.hold=step<v.speed*dt*0.3;
     if(stop!==undefined&&worksRel(v.d)<stop){      /* stand on the line and wait */
       v.d=((WORKS.d+stop)%LEN+LEN)%LEN;v.hold=true;
     }
@@ -1946,24 +3236,31 @@ function moveTraffic(dt,now){
       continue;
     }
     const u2=v.d/LEN;
-    const q=curve.getPointAt(u2);
-    const ahead=curve.getPointAt(((u2-0.006)%1+1)%1);
     const tanv=curve.getTangentAt(u2);
     const sidev=new THREE.Vector3().crossVectors(tanv,UP).normalize();
-    /* and when they do come, they come over onto our side to get round it */
+    /* When they do come through the works they have to come over onto our
+       line to get round the mud - so they only do it while we are not on it.
+       Nobody drives through anybody on this road. */
     let off=-LANE;
     if(WORKS.on){
       const k=1-Math.min(1,Math.abs(worksRel(v.d))/32);
-      if(k>0) off=-LANE+(PASS_OFF+LANE)*(k*k*(3-2*k));
+      const clearOfUs=Math.abs((((v.d-dist)%LEN)+LEN+LEN/2)%LEN-LEN/2)>52;
+      if(k>0&&clearOfUs) off=-LANE+(PASS_OFF+LANE)*(k*k*(3-2*k));
     }
-    const at=q.clone().addScaledVector(sidev,off);
-    v.g.position.set(at.x,q.y+0.1,at.z);
-    v.g.lookAt(ahead.x,ahead.y+0.1,ahead.z);
-    v.g.rotateY(Math.PI);
-    if(v.kind==='bike'){
-      if(!v.hold) v.g.rotation.z+=Math.sin(s*2.4+v.speed)*0.06;   /* a little weave */
-      v.rider.arm.rotation.x=v.hold?-0.25:-0.75;                  /* feet down, waiting */
-    }
+    v.off=off;
+    /* everything coming the other way sits on the road the same way we do:
+       bridged between its axles, nose up the ukalo and down the oralo */
+    const po=roadPose(u2,-1,v.kind==='bike'?1.36:4.3);
+    const bd=roadBend(u2,-1),lat=v.speed*v.speed*bd;
+    v.g.position.set(po.at.x+sidev.x*off,po.at.y+0.1,po.at.z+sidev.z*off);
+    /* a bus leans out of a bend on its springs; a bike leans into one, which is
+       the only way it gets round at all */
+    const lean=v.kind==='bike'
+      ? -Math.atan(lat/9.81)*0.85+(v.hold?0:Math.sin(s*2.4+v.speed)*0.045)
+      : Math.max(-0.11,Math.min(0.11,lat*0.019));
+    PS_E.set(po.pitch,po.yaw,lean);
+    v.g.quaternion.setFromEuler(PS_E);
+    if(v.kind==='bike') v.rider.arm.rotation.x=v.hold?-0.25:-0.75;  /* feet down, waiting */
   }
 }
 
@@ -2010,6 +3307,7 @@ const HERD=[];
       const a=quadruped([0xE4DED0,0xC9BBA4,0x6E6156][k%3],0.62,true);
       const j=at.clone().addScaledVector(side,(Math.random()-0.5)*5);
       j.x+=(Math.random()-0.5)*4;j.z+=(Math.random()-0.5)*4;
+      unstick(j,0.7);onBench(j,1.0);      /* a goat will stand anywhere but a bhir */
       j.y=terrainY(j.x,j.z);
       a.g.position.copy(j);a.g.rotation.y=Math.random()*6.28;
       scene.add(a.g);
@@ -2040,6 +3338,7 @@ const WORKS={d:0,on:false};
     for(const pole of [a,b]){
       const m=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.16,9,6),MAT(0x6B5334));
       m.position.set(pole.x,pole.y+4.5,pole.z);scene.add(m);
+      solid(pole.x,pole.z,0.35);
     }
     const FC=[0x2E5FD4,0xF2F2F2,0xD8382A,0x1E9E52,0xF0C21C];
     for(let k=0;k<17;k++){
@@ -2059,6 +3358,7 @@ const WORKS={d:0,on:false};
   {
     const {p,at}=roadside(0.46,-13);
     const st=new THREE.Group();facing(st,at,p);
+    solid(at.x,at.z,2.4);
     const base=new THREE.Mesh(new THREE.BoxGeometry(4,1.1,4),MAT(0xE8E2D2));
     base.position.y=0.55;st.add(base);
     const dome=new THREE.Mesh(new THREE.SphereGeometry(1.6,12,9),MAT(0xF2EFE7));
@@ -2187,6 +3487,7 @@ const WORKS={d:0,on:false};
   {
     const {p,at}=roadside(0.78,-12);
     const c=new THREE.Group();facing(c,at,p);
+    solid(at.x,at.z,3.6);
     const plinth=new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.7,0.8,12),MAT(0x8E8578));
     plinth.position.y=0.4;c.add(plinth);
     const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.75,4.6,8),MAT(0x4A3625));
@@ -2203,6 +3504,7 @@ const WORKS={d:0,on:false};
   for(const u of [0.17,0.58]){
     const {p,at}=roadside(u,13.5);
     const g=new THREE.Group();facing(g,at,p);
+    solid(at.x,at.z,3.0);
     const bamboo=MAT(0xB9A472);
     /* two A-frames of lashed bamboo, a crossbar between them */
     for(const sx of [-2.6,2.6]){
@@ -2308,6 +3610,7 @@ const WORKS={d:0,on:false};
     /* ---- THE DOZER. Built facing +Z, which is across the road at the pile ---- */
     const yellow=MAT(0xE8B21C),yellowD=MAT(0xC9930F),steelD=MAT(0x3A3A3C),
           trackC=MAT(0x24242A),glassD=MAT(0x18222E);
+    solid(SP.x+SS.x*7.4,SP.z+SS.z*7.4,3.9);   /* nobody walks through a digger */
     const dig={};
     {
       const g=new THREE.Group();
@@ -2483,6 +3786,7 @@ const WORKS={d:0,on:false};
       const u=(run.u0+i*SPACE)%1;
       const {p,at}=roadside(u,-8);
       const g=new THREE.Group();facing(g,at,p);   /* +Z points at the road */
+      solid(at.x,at.z,0.4);
       const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.19,8.4,7),steelL);
       pole.position.y=4.2;g.add(pole);
       const arm=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.15,2.6),steelL);
@@ -2527,6 +3831,7 @@ const WORKS={d:0,on:false};
       const {at}=roadside(u,-7.6);
       const back=curve.getPointAt(((u-0.03)%1+1)%1);
       const g=new THREE.Group();facing(g,at,back);
+      solid(at.x,at.z,0.34);
       const post=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.13,4,7),postMat);
       post.position.y=2;g.add(post);
       const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.16,7),capMat);
@@ -2789,8 +4094,46 @@ let sunSprite=null,moonSprite=null,starField=null;
 
 const slow=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const LEN=curve.getLength();
-const BACK=0.0068,AHEAD=0.0030,HEAD=0.0060,CAM_Y=4.4,LOOK_Y=1.9;
+const BACK=0.0068,AHEAD=0.0030,CAM_Y=4.4,LOOK_Y=1.9;
 const CRUISE=slow?2:19,BRAKE=95;      /* BRAKE = curve units spent slowing down */
+/* ---------- WHO IS IN THE WAY ON THE ROAD. Everything on wheels is a length
+   of road and a width across it, so two of them cannot be in the same place.
+   The hero micro is a road user like any other; it simply happens to be the
+   one the camera is following. ---------- */
+const HERO_U={d:0,dir:1,off:LANE,halfW:1.8,halfLen:4.3,on:true,hero:true};
+const USERS=[HERO_U];
+function joinRoad(v){
+  v.dir=-1;v.off=-LANE;
+  v.halfW=v.kind==='bike'?0.62:1.7;
+  v.halfLen=v.kind==='bike'?1.3:3.4;
+  USERS.push(v);
+}
+/* is there room on the loop at d for this vehicle, front and back? */
+function roomAt(d,me){
+  for(let i=0;i<USERS.length;i++){
+    const o=USERS[i];
+    if(o===me||!o.on) continue;
+    if(Math.abs((me.off===undefined?-LANE:me.off)-o.off)>=me.halfW+o.halfW) continue;
+    const rel=Math.abs((((d-o.d)%LEN)+LEN+LEN/2)%LEN-LEN/2);
+    if(rel<me.halfLen+o.halfLen+7) return false;
+  }
+  return true;
+}
+/* how much clear road there is in front of somebody before they are into the
+   back - or the front - of somebody else */
+function frontGap(me){
+  let best=Infinity;
+  for(let i=0;i<USERS.length;i++){
+    const o=USERS[i];
+    if(o===me||!o.on) continue;
+    if(Math.abs(me.off-o.off)>=me.halfW+o.halfW) continue;
+    const fwd=((((o.d-me.d)*me.dir)%LEN)+LEN)%LEN;
+    const clear=fwd-(me.halfLen+o.halfLen);
+    if(clear<best) best=clear;
+  }
+  return best;
+}
+for(const v of TRAFFIC) joinRoad(v);
 /* hand the radar the loop outline and every stop on it */
 {
   const pts=[];
@@ -2812,7 +4155,7 @@ const CRUISE=slow?2:19,BRAKE=95;      /* BRAKE = curve units spent slowing down 
   /* the khola, so the radar shows what the pul is there for */
   const riv=[];
   for(let i=0;i<=64;i++){
-    const a=-RIV_RUN+2*RIV_RUN*i/64;
+    const a=-40+(RIV_RUN+40)*i/64;
     const wig=Math.sin(a*0.0115)*14+Math.sin(a*0.026)*6;
     riv.push([BR_P.x+BR_A.x*a+BR_T.x*wig,BR_P.z+BR_A.z*a+BR_T.z*wig]);
   }
@@ -2822,6 +4165,9 @@ hasScene=true;                       /* the banner sticker can follow the real m
 /* the scene opens parked at a tea stop — press play and it pulls away */
 let dist=PASALS.length?PASALS[0].u*LEN0:0;
 let last=performance.now(),vis=true,speed=0,parked=1,frames=0;
+/* what the body is doing on its springs, and where the wheels have got to */
+const bodyPitch={x:0,v:0},bodyRoll={x:0,v:0};
+let lastSpeed=0,steerAt=0,spinAt=0;
 const camPos=new THREE.Vector3(),tmp=new THREE.Vector3(),look=new THREE.Vector3(),
       sideV=new THREE.Vector3(),tanV=new THREE.Vector3();
 document.addEventListener('visibilitychange',()=>{vis=!document.hidden;last=performance.now();});
@@ -2887,9 +4233,49 @@ function pathAt(r,x,out){
   return out.copy(r.path[r.path.length-1]);
 }
 
+/* One rider, put where their walk has got to and animated to match: striding
+   if they are covering ground, stood with a glass of tea if they are not.
+   Shared by getting down at a stop and by climbing in before we leave. */
+const rv=new THREE.Vector3(),rw=new THREE.Vector3();
+function riderStep(r,dt,s){
+  pathAt(r,r.x,rv);
+  rw.subVectors(rv,r.who.position);
+  const moved=rw.length(),pace=Math.min(1,moved/Math.max(dt,1e-4)/1.7);
+  if(moved>0.0015) r.face=Math.atan2(rw.x,rw.z);
+  else if(r.x>0.95) r.face=Math.atan2(r.look.x-rv.x,r.look.z-rv.z);
+  else if(r.x<0.05) r.face=Math.PI;
+  r.who.position.copy(rv);
+  /* They ride inside the micro, so they are drawn in its coordinates - out to
+     the world to find out what is in the way, and back again to stand there. */
+  if(r.x>0.03){
+    SB_W.copy(rv);micro.localToWorld(SB_W);
+    const hit=unstick(SB_W,0.44),off=onBench(SB_W,0.9);
+    if(hit||off){
+      micro.worldToLocal(SB_W);
+      r.who.position.x=SB_W.x;r.who.position.z=SB_W.z;
+    }
+  }
+  const da=((r.face-r.who.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
+  r.who.rotation.y+=da*Math.min(1,dt*7);
+
+  if(pace>0.05){                          /* walking: swing an arm, and bob */
+    r.arm.rotation.x=Math.sin(s*7.4+r.ph)*0.8*pace;
+    r.head.rotation.x=0;
+    r.who.position.y+=Math.abs(Math.sin(s*7.4+r.ph))*0.07*pace;
+    r.mouth.scale.set(1.3,0.45,0.4);
+  }else{                                  /* stood about with a glass of tea */
+    const c=(s*r.rate+r.ph/6.28)%1;
+    const lift=c<0.42?c/0.42:(c<0.62?1:Math.max(0,1-(c-0.62)/0.38));
+    const e=lift*lift*(3-2*lift);
+    r.arm.rotation.x=-e*1.2;r.head.rotation.x=-e*0.34;
+    r.mouth.scale.set(1.3-e*0.5,0.45+e*1.5,0.4);
+  }
+  const blink=(s%r.blink)<0.13?0.12:1;
+  for(const ey of r.eyes) ey.scale.y=blink;
+}
+
 /* seat → doorway → down the step → out to the shop, and the same in reverse.
    Returns true while anyone is out or the door is still open: the micro waits. */
-const rv=new THREE.Vector3(),rw=new THREE.Vector3();
 function ridersMove(dt,now){
   const s=now*0.001;
   let busy=false;
@@ -2902,32 +4288,7 @@ function ridersMove(dt,now){
     r.x=r.x<target?Math.min(target,r.x+rate):Math.max(target,r.x-rate);
     if(r.x>0.05) busy=true;
     r.who.visible=r.x>0.002||doorOpen>0.02;
-    if(!r.who.visible) continue;
-
-    pathAt(r,r.x,rv);
-    rw.subVectors(rv,r.who.position);
-    const moved=rw.length(),pace=Math.min(1,moved/Math.max(dt,1e-4)/1.7);
-    if(moved>0.0015) r.face=Math.atan2(rw.x,rw.z);
-    else if(r.x>0.95) r.face=Math.atan2(r.look.x-rv.x,r.look.z-rv.z);
-    else if(r.x<0.05) r.face=Math.PI;
-    r.who.position.copy(rv);
-    const da=((r.face-r.who.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
-    r.who.rotation.y+=da*Math.min(1,dt*7);
-
-    if(pace>0.05){                          /* walking: swing an arm, and bob */
-      r.arm.rotation.x=Math.sin(s*7.4+r.ph)*0.8*pace;
-      r.head.rotation.x=0;
-      r.who.position.y+=Math.abs(Math.sin(s*7.4+r.ph))*0.07*pace;
-      r.mouth.scale.set(1.3,0.45,0.4);
-    }else{                                  /* stood about with a glass of tea */
-      const c=(s*r.rate+r.ph/6.28)%1;
-      const lift=c<0.42?c/0.42:(c<0.62?1:Math.max(0,1-(c-0.62)/0.38));
-      const e=lift*lift*(3-2*lift);
-      r.arm.rotation.x=-e*1.2;r.head.rotation.x=-e*0.34;
-      r.mouth.scale.set(1.3-e*0.5,0.45+e*1.5,0.4);
-    }
-    const blink=(s%r.blink)<0.13?0.12:1;
-    for(const ey of r.eyes) ey.scale.y=blink;
+    if(r.who.visible) riderStep(r,dt,s);
   }
   /* the door leads them out and waits for the last one back in */
   const want=((wantOut&&stopT>0.25)||busy)?1:0;
@@ -2938,6 +4299,77 @@ function ridersMove(dt,now){
   }
   return busy||doorOpen>0.02;
 }
+
+/* ---------- FILLING UP. A micro leaves when it is full, and it is never full:
+   before the off there is always one more coming up the kerb behind. The same
+   pathAt() walk as a stop, only run the other way and on a loop. ---------- */
+let queued=false;
+
+/* Fade a rider in as they come up out of the distance, so nobody is seen to
+   appear on an empty kerb. MAT() builds a material per mesh, so this touches
+   that one person; `transparent` is only flipped when it changes, because it
+   costs a shader recompile. */
+function riderAlpha(r,a){
+  a=Math.max(0,Math.min(1,a));
+  if(r.alpha===a) return;
+  if(!r.mats){r.mats=[];r.who.traverse(o=>{if(o.material)r.mats.push(o.material);});}
+  const on=a<0.999;
+  for(const m of r.mats){
+    if(m.transparent!==on){m.transparent=on;m.needsUpdate=true;}
+    m.opacity=a;
+  }
+  r.alpha=a;
+}
+
+/* their place in the queue, and the walk from it to their seat — in the micro's
+   own coordinates, like every other rider path. +Z is the tail, −X the kerb. */
+function queueRiders(){
+  micro.updateMatrixWorld();
+  const w=new THREE.Vector3();
+  RIDERS.forEach((r,i)=>{
+    const gy=P_OUT.y;
+    const q=new THREE.Vector3(-3.3-(i%2)*0.55,gy,5.0+i*1.8);
+    /* stand them on the road rather than on the micro's floorpan: over that
+       many metres of tail the ground has moved under them */
+    micro.localToWorld(w.copy(q));
+    w.y=terrainY(w.x,w.z);
+    q.y=micro.worldToLocal(w).y;
+    r.path=[r.seat.clone(),P_IN.clone(),P_OUT.clone(),
+            new THREE.Vector3(-2.95,gy,3.0),q];
+    r.cum=[0];
+    for(let k=1;k<r.path.length;k++) r.cum.push(r.cum[k-1]+r.path[k].distanceTo(r.path[k-1]));
+    r.len=r.cum[r.cum.length-1];
+    r.dur=Math.max(3.4,r.len/2.3);      /* an even walking pace, however long the queue */
+    r.look.copy(P_OUT);                 /* while they wait, they watch the door */
+    r.qt=-i*1.2;                        /* one door: they go up it in turn */
+    r.x=1;
+  });
+}
+function queueBoard(dt,now){
+  if(!queued){queueRiders();queued=true;}
+  const s=now*0.001;
+  for(const r of RIDERS){
+    r.qt+=dt;
+    const cyc=r.dur+1.6;                /* up the kerb, in, and another one behind */
+    const p=((r.qt%cyc)+cyc)%cyc;
+    r.x=p<r.dur?1-p/r.dur:0;            /* 1 is the back of the queue, 0 is the seat */
+    r.who.visible=r.x>0.004;
+    if(!r.who.visible) continue;
+    riderAlpha(r,(1-r.x)*11);
+    riderStep(r,dt,s);
+  }
+  doorOpen=Math.min(1,doorOpen+dt*1.15);         /* the door stands open throughout */
+  if(microDoor){
+    microDoor.position.z=doorOpen*2.02;
+    microDoor.position.x=-1.70-doorOpen*0.17;
+  }
+}
+/* The press: everyone still on the kerb piles in at once, and from here the
+   ordinary stop logic has them again — dur is reset at the next pasal anyway. */
+letThemIn=()=>{
+  wantOut=false;stopT=9;
+  for(const r of RIDERS){riderAlpha(r,1);r.dur=1.9;}   /* at a hurry, not a stroll */
+};
 
 /* ---------- SUNDOWN. One dial: the sky, the three lights, the ridge bands,
    every flat colour that would otherwise blaze, every lamp, and every beam. ---- */
@@ -3022,6 +4454,10 @@ function pahiro(dt,now){
   /* slewing: 0 sat over the pile, 1 swung away to tip */
   const swing=ease(seg(c,0.46,0.66))-ease(seg(c,0.86,1));
   dig.house.rotation.y=-0.5+swing*1.25;
+  /* While the boom is round over the pile it is over the tarmac as well, and
+     the flagman holds everything until it swings back to tip. Which is the real
+     reason a queue at a pahiro moves the way it does. */
+  SLIDE.hold=swing<0.45;
   /* the boom drops into the pile, then picks the load up */
   const down=ease(seg(c,0.02,0.2))-ease(seg(c,0.34,0.46));
   dig.boom.rotation.x=-0.72+down*0.5;
@@ -3089,7 +4525,7 @@ function kidsCross(dt,now){
         const from=-9,to=9;
         const at=(from+(to-from)*walk)*c.dir;
         const j=c.p.clone().addScaledVector(c.side,at);
-        j.addScaledVector(c.side,0);
+        unstick(j,0.34);onBench(j,0.8);
         k.who.position.set(j.x,terrainY(j.x,j.z)+(walk>0&&walk<1?Math.abs(Math.sin(s*7+i))*0.07:0),j.z);
         k.who.rotation.y=Math.atan2(c.side.x*c.dir,c.side.z*c.dir);
         k.arm.rotation.x=(walk>0&&walk<1)?Math.sin(s*7+i)*0.7:-0.2;
@@ -3105,12 +4541,88 @@ function kidsCross(dt,now){
       for(let i=0;i<c.kids.length;i++){
         const k=c.kids[i];
         const j=c.p.clone().addScaledVector(c.side,-9*c.dir+ (i*0.8-0.8)*0.3);
+        unstick(j,0.34);onBench(j,0.8);
         k.who.position.set(j.x,terrainY(j.x,j.z),j.z);
         k.arm.rotation.x=-0.2;
       }
     }
   }
 }
+/* ---------- THE CAB, FRAME BY FRAME. Only ever called while you are sitting
+   in it. The wheel is geared down off the same steering the road wheels are
+   using, so it never disagrees with where the micro is going; the arms follow
+   the hands round; and everything hung up in the windscreen answers to what the
+   bend is doing to it, because that is the only reason any of it is there. ---------- */
+const CAB_W=new THREE.Vector3(),CAB_D=new THREE.Vector3();
+let wheelAt=0,gearAt=-0.1,shiftT=0,lastClimb=0;
+function cabFrame(dt,now,latg,accel,climb){
+  const C=CABREF;
+  if(!C.group) return;
+  /* the rack: about five turns of the wheel to full lock on the road, eased
+     like an arm rather than snapped like a servo */
+  wheelAt+=(steerAt*4.7-wheelAt)*Math.min(1,dt*6.5);
+  const lock=Math.max(-1.55,Math.min(1.55,wheelAt));
+  C.wheel.rotation.z=lock;
+
+  /* the arms. The hands are riding on the rim, so where they have got to is a
+     question for the wheel; the shoulders know only that they must reach. */
+  C.group.updateMatrixWorld(true);
+  for(let i=0;i<C.arms.length;i++){
+    const a=C.arms[i];
+    C.hands[i].getWorldPosition(CAB_W);
+    a.arm.lookAt(CAB_W);
+    a.arm.getWorldPosition(CAB_D);
+    const len=Math.max(0.22,CAB_D.distanceTo(CAB_W));
+    a.fore.scale.y=len;a.fore.position.z=len*0.5;
+    a.cuff.position.z=len-0.07;
+  }
+
+  /* the speedo. It reads what the micro is actually doing, which on an ukalo is
+     never what the driver would like it to. */
+  if(C.needle){
+    const kmh=Math.min(160,speed*3.4);
+    C.needle.rotation.z=2.33-4.6*(kmh/160);
+  }
+
+  /* the sayapatri and the mala: they hang, so they answer to the bend and to
+     the brakes, and they are always a little behind both */
+  if(C.garland){
+    const sw=Math.max(-0.5,Math.min(0.5,-latg*0.032));
+    C.garland.rotation.z+=(sw+Math.sin(now*0.0021)*0.035-C.garland.rotation.z)*Math.min(1,dt*3.4);
+    C.garland.rotation.x+=(Math.max(-0.4,Math.min(0.4,accel*0.02))-C.garland.rotation.x)*Math.min(1,dt*3);
+    C.mala.rotation.z=C.garland.rotation.z*1.25;
+    C.mala.rotation.x=C.garland.rotation.x*0.8;
+  }
+  /* the jhalar, which is the first thing in here that moves when he turns in */
+  for(let i=0;i<C.fringe.length;i++){
+    const f=C.fringe[i];
+    f.g.rotation.x=Math.sin(now*0.0042+f.ph)*0.13+accel*0.012;
+    f.g.rotation.z=-latg*0.022+Math.sin(now*0.0031+f.ph*0.7)*0.05;
+  }
+  /* the tape deck, jumping along with whatever is playing */
+  for(let i=0;i<C.meter.length;i++){
+    const lv=driving?0.25+0.75*Math.abs(Math.sin(now*0.009+i*1.3)*Math.sin(now*0.0031+i)):0.12;
+    C.meter[i].scale.y=Math.max(0.08,lv);
+  }
+  /* the gear. Second is for the ukalo and he is in it a long time; every time
+     the hill steepens enough to matter, the lever goes across and comes back. */
+  if(climb>lastClimb+0.02||climb<lastClimb-0.03){shiftT=0.42;lastClimb=climb;}
+  shiftT=Math.max(0,shiftT-dt);
+  const want=-0.1-Math.min(1.05,climb*7);
+  gearAt+=(want-gearAt)*Math.min(1,dt*4);
+  if(C.gear){
+    C.gear.rotation.x=gearAt+ (shiftT>0?Math.sin(shiftT*24)*0.16:0);
+    C.gear.rotation.z=(shiftT>0?Math.sin(shiftT*18)*0.1:0)+Math.sin(now*0.0027)*0.015;
+  }
+  /* and the horn, which on this road is a form of speech */
+  if(C.horn){
+    hornT=Math.max(0,hornT-dt);
+    const k=hornT>0?1:0;
+    C.horn.scale.z=1-k*0.4;
+    C.horn.position.z=0.035-k*0.012;
+  }
+}
+
 function frame(now){
   requestAnimationFrame(frame);
   if(!vis) return;
@@ -3140,14 +4652,35 @@ function frame(now){
     if(g<gap&&g<240) gap=g;
   }
 
+  /* An overloaded micro does not hold its speed up an ukalo — second gear, the
+     engine roaring, and everything slower than you want — and it runs away a
+     little down the oralo, where the driver is off the throttle and on the
+     brakes. That rise and fall is the rhythm of a whole day on this road. */
+  const grade=roadPose(dist/LEN,1,WB).pitch;
+  const climb=Math.max(0,grade),fall=Math.max(0,-grade);
+  const cruise=CRUISE*(1/(1+climb*3.6)+Math.min(0.24,fall*1.1));
+  const pull=dt*CRUISE*0.7/(1+climb*5);         /* and it is slow to get it back */
+  /* what else is on this road, and how much of it is ours to use. A micro is
+     seven metres of vehicle: it stops behind things rather than in them. */
+  HERO_U.d=dist;HERO_U.off=LANE;
+  const road=frontGap(HERO_U)-1.6;
+  if(road<gap) gap=Math.max(0,road);
+  /* and the machine on the pahiro: while its bucket is out over the tarmac the
+     flagman holds us, and we go when it swings back to tip */
+  if(WORKS.on&&SLIDE&&SLIDE.hold){
+    const line2=-16-worksRel(dist);            /* how far to the flagman */
+    if(line2>0&&line2<200) gap=Math.min(gap,line2);
+    else if(line2<=0&&line2>-30) gap=0;
+  }
   if(!driving||boarding){
     speed=0;                             /* handbrake — and held until all aboard */
   }else if(gap===Infinity){
-    speed=Math.min(CRUISE,speed+dt*CRUISE*0.7);
+    speed=Math.min(cruise,speed+pull);
   }else{
     const cap=CRUISE*Math.sqrt(Math.max(0,gap)/BRAKE);
-    speed=Math.min(Math.min(CRUISE,speed+dt*CRUISE*0.7),cap);
+    speed=Math.min(Math.min(cruise,speed+pull),cap);
   }
+  if(speed>cruise) speed=Math.max(cruise,speed-dt*CRUISE*0.55);   /* off the gas */
   /* nobody drives through a pahiro at speed, and the flagman would not let us */
   if(WORKS.on){
     const wr=worksRel(dist);
@@ -3156,6 +4689,8 @@ function frame(now){
 
   let step=speed*dt;
   if(gap!==Infinity&&step>=gap){step=gap;speed=0;}   /* land on the mark */
+  const room=frontGap(HERO_U)-1.5;                   /* and never, ever overlap */
+  if(step>room){step=Math.max(0,room);speed=Math.min(speed,step/Math.max(dt,1e-3));}
   dist=(dist+step)%LEN;
 
   /* tell the banner and the radar where we are */
@@ -3168,7 +4703,6 @@ function frame(now){
   const t=dist/LEN;
   moveTraffic(dt,now);
 
-  const p=curve.getPointAt(t),hd=curve.getPointAt((t+HEAD)%1);
   /* hold our lane, and let the camera hold it too */
   tanV.copy(curve.getTangentAt(t));
   sideV.crossVectors(tanV,UP).normalize();
@@ -3185,19 +4719,48 @@ function frame(now){
     }
   }
   const moving=Math.min(1,speed/CRUISE);
-  micro.position.set(p.x+lx,p.y+0.12+idle+bump*moving,p.z+lz);
-  micro.lookAt(hd.x+lx,hd.y+0.12,hd.z+lz);
-  micro.rotateY(Math.PI);
-  micro.rotation.z+=Math.sin(now*0.0016)*0.012*moving+tilt*moving;
+  /* ---- The body, bridged between its axles rather than pasted to the road:
+     heading along the wheelbase, pitch from the ukalo or the oralo under it,
+     and a lean out of the bend against its springs. The nose dips when he gets
+     on the brakes for a blind corner and comes up again as he pulls away. ---- */
+  const pose=roadPose(t,1,WB);
+  const bend=roadBend(t,1);
+  const latg=speed*speed*bend;                    /* what the passengers feel */
+  const accel=(speed-lastSpeed)/Math.max(dt,1e-3);lastSpeed=speed;
+  const labour=Math.min(1,climb*7)*moving;        /* how hard it is working */
+  const pitch=sprung(bodyPitch,pose.pitch+accel*0.011,1.25,0.62,dt)
+             +Math.sin(now*0.047)*0.0045*labour;  /* the engine shaking the shell */
+  const roll=sprung(bodyRoll,Math.max(-0.13,Math.min(0.13,latg*0.021)),1.05,0.5,dt)
+             +Math.sin(now*0.0016)*0.010*moving+tilt*moving
+             +Math.sin(now*0.039+1.3)*0.005*labour;
+  micro.position.set(pose.at.x+lx,pose.at.y+0.12+idle+bump*moving,pose.at.z+lz);
+  PS_E.set(pitch,pose.yaw,roll);
+  micro.quaternion.setFromEuler(PS_E);
+  /* the front wheels point where he is actually steering, and all four turn at
+     the rate the tarmac is going past them */
+  const lock=-Math.atan(WB*bend)*1.85;
+  steerAt+=(lock-steerAt)*Math.min(1,dt*6.5);
+  for(const w of WHEELS.steer) w.rotation.y=steerAt;
+  spinAt=(spinAt-speed*dt/0.74)%6.2832;
+  for(const w of WHEELS.spin) w.rotation.x=spinAt;
 
   /* Are we pulled up beside somewhere worth getting down at? Held on through
      boarding, so the camera stays wide until the last passenger is aboard. */
   if(!driving&&speed===0) stopHere=stopNear(dist);
   else if(driving&&!boarding) stopHere=null;
-  const nowWant=!!stopHere&&!driving;
-  if(nowWant!==wantOut){wantOut=nowWant;stopT=0;if(nowWant)seatRiders(stopHere);}
-  stopT+=dt;
-  boarding=ridersMove(dt,now);
+  if(!started){
+    /* before the off the traffic through that door runs the other way */
+    queueBoard(dt,now);
+    boarding=false;                    /* nothing to wait for — we are not going yet */
+  }else{
+    /* the press hands them back to the stop logic. Until the first note lands
+       nobody is getting down again: they are all still climbing in. */
+    const nowWant=!!stopHere&&!driving&&!departing;
+    if(nowWant!==wantOut){wantOut=nowWant;stopT=0;if(nowWant)seatRiders(stopHere);}
+    stopT+=dt;
+    boarding=ridersMove(dt,now);
+    if(driving) departing=false;
+  }
   parked=stopHere?Math.min(1,parked+dt*1.3):Math.max(0,parked-dt*2.0);
 
   const bk=curve.getPointAt((t-BACK+1)%1),lk=curve.getPointAt((t+AHEAD)%1);
@@ -3211,17 +4774,60 @@ function frame(now){
     tmp.copy(micro.position).lerp(stopHere.pos,0.45);tmp.y+=2.2;
     look.lerp(tmp,parked*0.9);
   }
-  camera.position.lerp(camPos,slow?1:0.09);
-  camera.lookAt(look);
-  /* half a second in, the camera has lerped into its opening framing, whether
+  /* While the micro is filling up the shop is not the story — the door is. Come
+     in off the tail on the kerb side, low, so the queue walking up is people
+     rather than a row of dots. */
+  if(!started&&parked>0.001){
+    tmp.copy(micro.position).addScaledVector(sideV,-6.4-portrait*1.2)
+                            .addScaledVector(tanV,-13-portrait*5);
+    tmp.y=micro.position.y+3.9+portrait*1.3;
+    camPos.lerp(tmp,parked);
+    tmp.copy(micro.position).addScaledVector(sideV,-1.5).addScaledVector(tanV,-3.6);
+    tmp.y=micro.position.y+1.5;
+    look.lerp(tmp,parked*0.92);
+  }
+  if(pov){
+    /* In the seat. The camera is bolted to the cab, so the road comes at you
+       and the body you are sitting in does not move at all — which is what
+       makes an ukalo feel like an ukalo. His head stays a little more level
+       than the shell around it, and turns into a bend a beat before the front
+       wheels get there, the way anyone's does. */
+    micro.updateMatrixWorld(true);
+    tmp.set(0.92,3.28,-1.24).applyMatrix4(micro.matrixWorld);
+    camera.position.copy(tmp);
+    camera.quaternion.copy(micro.quaternion);
+    camera.rotateY(steerAt*0.55);
+    camera.rotateX(-pitch*0.18+0.03);
+    camera.rotateZ(-roll*0.42);
+    const fovP=portrait?62:54;
+    if(Math.abs(camera.fov-fovP)>0.02){
+      camera.fov+=(fovP-camera.fov)*Math.min(1,dt*4);camera.updateProjectionMatrix();
+    }
+  }else{
+    camera.position.lerp(camPos,slow?1:0.09);
+    camera.lookAt(look);
+    /* and widen the lens with it, so the whole stop is in frame */
+    const fov=Math.min(74,56+parked*13+portrait*9);
+    if(Math.abs(camera.fov-fov)>0.02){
+      camera.fov+=(fov-camera.fov)*Math.min(1,dt*3.2);camera.updateProjectionMatrix();
+    }
+  }
+  /* half a second in, the camera has settled into its opening framing, whether
      that is parked at the pasal or already rolling — put an aeroplane in it */
   if(!aimed&&++frames>30) aimOpeningFlight();
-  /* and widen the lens with it, so the whole stop is in frame */
-  const fov=Math.min(74,56+parked*13+portrait*9);
-  if(Math.abs(camera.fov-fov)>0.02){
-    camera.fov+=(fov-camera.fov)*Math.min(1,dt*3.2);camera.updateProjectionMatrix();
-  }
+  if(pov) cabFrame(dt,now,latg,accel,climb);
   if(riverFlow) riverFlow.offset.y=(riverFlow.offset.y+dt*0.14)%1;
+  /* the fall runs a great deal faster than the flat water above it, and its
+     spray is a flat plane, so it has to be turned to wherever we are */
+  if(jharana) jharana.offset.y=(jharana.offset.y+dt*1.15)%1;
+  /* the big khola runs at two speeds, the skin of it faster than the body */
+  if(bigFlow) bigFlow.offset.y=(bigFlow.offset.y+dt*0.30)%1;
+  if(bigFoam) bigFoam.offset.y=(bigFoam.offset.y+dt*0.52)%1;
+  for(let i=0;i<SPRAY.length;i++){
+    const pf=SPRAY[i];
+    pf.lookAt(camera.position);
+    pf.scale.setScalar(0.9+Math.sin(now*0.0011+i*1.7)*0.12);
+  }
 
   for(const k of kites){const u=k.userData;u.a+=dt*u.sp*0.1;
     k.position.set(Math.cos(u.a)*u.r,u.y+Math.sin(now*0.0009+u.ph)*14,Math.sin(u.a)*u.r);}
@@ -3316,42 +4922,53 @@ setDest(DEST);
 
 function warn(html){const w=$('warn');w.innerHTML=html;w.style.display=html?'block':'none';}
 
-/* ---- Autoplay. The tape is supposed to be rolling before you touch anything,
-   but a browser will only autoplay sound for a site it thinks you care about.
-   So: ask for it with sound, and if nothing is playing a moment later, mute and
-   try again — muted autoplay is always allowed. The first click, key or tap
-   after that is the gesture the browser was waiting for, so the sound comes up
-   then, by itself. ---- */
-let hushed=false,triedMute=false,autoT=null;
-function notice(){
-  warn(hushed?'The tape is rolling, muted — browsers will not start sound on '
-             +'their own. <code>Click anywhere</code> for it.':'');
-  $('warn').className=hushed?'hush':'';
+/* ---- Starting the tape. A browser will not put sound on a page nobody has
+   touched, and there is no arguing with it — so we do not try to autoplay at
+   all. The player is built cued and quiet, and the press that lets the
+   handbrake off is the gesture it has been waiting for. One press, both
+   things: the tape rolls and the micro pulls away on the first note. ---- */
+let autoT=null,pendingStart=false;
+function startTape(){
+  if(!ready){pendingStart=true;setPlay('loading');return;}   /* API still coming */
+  pendingStart=false;
+  try{
+    player.unMute();
+    if(player.getVolume&&!player.getVolume()) player.setVolume(100);
+  }catch(err){}
+  setPlay('loading');
+  if(firstPlay){                       /* come in somewhere along the tape */
+    firstPlay=false;
+    const n=(player.getPlaylist()||[]).length;
+    if(n>1){player.playVideoAt(Math.floor(Math.random()*n));return;}
+  }
+  player.playVideo();
 }
-function tryAutoplay(){
+/* If nothing is rolling several seconds after the press, it is not the autoplay
+   policy — it is YouTube being slow or the track being blocked. Let the micro
+   go rather than leave it parked at the pasal for ever. */
+function watchTape(){
   clearTimeout(autoT);
   autoT=setTimeout(()=>{
     if(!ready||!player.getPlayerState) return;
     if(player.getPlayerState()===YT.PlayerState.PLAYING) return;
-    if(triedMute){setPlay('idle');return;}      /* it will not roll at all; wait */
-    /* No sound without a gesture, then — so take the tape muted instead. That
-       has to be set when the player is built: muting one that is already up
-       does not buy back the permission. */
-    triedMute=true;hushed=true;notice();
-    make(true,true);
-  },1500);
+    driving=true;
+    if(!LOCAL) warn('The tape is slow to come on — press ▶ if it stays quiet.');
+  },6500);
 }
-function unhush(){
-  if(!hushed) return;
-  hushed=false;notice();
-  try{
-    player.unMute();
-    if(player.getVolume&&!player.getVolume()) player.setVolume(100);
-    if(player.getPlayerState()!==YT.PlayerState.PLAYING) player.playVideo();
-  }catch(err){}
+
+/* ---- The off. One press does the lot: the gate goes, whoever is halfway up
+   the kerb hurries in, the horn sounds, and the tape starts. ---- */
+function depart(){
+  if(started) return;
+  started=true;departing=true;
+  document.body.classList.remove('gated');
+  const g=$('gate');
+  if(g){g.classList.add('gone');setTimeout(()=>{g.style.display='none';},700);}
+  if(letThemIn) letThemIn();           /* whoever is on the kerb gets a shove */
+  startTape();
+  watchTape();
+  honk();                              /* the conductor bangs the side and we go */
 }
-for(const ev of ['pointerdown','keydown','touchstart'])
-  addEventListener(ev,unhush,{passive:true});
 
 const ICON_PLAY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.1L19 12 8 18.9z"/></svg>';
 const ICON_PAUSE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.3v14H7zm6.7 0H17v14h-3.3z"/></svg>';
@@ -3455,13 +5072,21 @@ function drawMap(){
   const X=p=>p[0]*s+cx, Y=p=>p[1]*s+cy;
   mctx.clearRect(0,0,size,size);
 
-  /* the khola, under everything else */
+  /* the water, under everything else: the big khola the road follows all day,
+     and the side stream the pul crosses coming down into it */
+  mctx.lineCap='round';
+  if(mapBig.length){
+    mctx.beginPath();
+    mctx.moveTo(X(mapBig[0]),Y(mapBig[0]));
+    for(let i=1;i<mapBig.length;i++) mctx.lineTo(X(mapBig[i]),Y(mapBig[i]));
+    mctx.closePath();
+    mctx.strokeStyle='rgba(95,168,240,.55)';mctx.lineWidth=5.5;mctx.stroke();
+  }
   if(mapRiver.length){
     mctx.beginPath();
     mctx.moveTo(X(mapRiver[0]),Y(mapRiver[0]));
     for(let i=1;i<mapRiver.length;i++) mctx.lineTo(X(mapRiver[i]),Y(mapRiver[i]));
-    mctx.lineCap='round';
-    mctx.strokeStyle='rgba(95,168,240,.5)';mctx.lineWidth=4;mctx.stroke();
+    mctx.strokeStyle='rgba(95,168,240,.5)';mctx.lineWidth=3.2;mctx.stroke();
   }
 
   /* the road */
@@ -3628,16 +5253,19 @@ function make(autoplay,muted){
       onReady:()=>{
         ready=true;player.setShuffle(true);startPoll();paint();
         setPlay(autoplay?'loading':'idle');
-        if(!LOCAL) notice();
+        if(!LOCAL) warn('');
         if(autoplay){
           firstPlay=false;                 /* the tape already picked its own track */
           player.playVideo();
-          tryAutoplay();                   /* and mute rather than not play at all */
+          watchTape();
+        }else if(pendingStart){            /* pressed before the API turned up */
+          startTape();watchTape();
         }
       },
       onStateChange:e=>{
         if(e.data===YT.PlayerState.PLAYING){
-          setPlay('playing');paint();notice();
+          setPlay('playing');paint();
+          if(!LOCAL) warn('');
           clearTimeout(autoT);
           skips=0;clearTimeout(skipT);
         }
@@ -3661,18 +5289,15 @@ setPlay('loading');
   s.onerror=()=>{setPlay('idle');
     warn('Could not reach the YouTube API script.');};
   document.head.appendChild(s);
-  window.onYouTubeIframeAPIReady=()=>make(true);   /* rolling from the off */
+  /* cued, not rolling: the tape waits for the same press the micro does */
+  window.onYouTubeIframeAPIReady=()=>make(false);
 })();
 
 $('play').onclick=()=>{
+  if(!started){depart();return;}      /* the first press is the departure */
   if(!ready){warn('Player is still loading \u2014 give it a second.');return;}
   if(player.getPlayerState()===YT.PlayerState.PLAYING){player.pauseVideo();return;}
-  if(firstPlay){
-    firstPlay=false;
-    const n=(player.getPlaylist()||[]).length;
-    if(n>1){player.playVideoAt(Math.floor(Math.random()*n));return;}
-  }
-  player.playVideo();
+  startTape();
 };
 $('next').onclick=()=>{if(ready){player.nextVideo();setTimeout(paint,900);}};
 $('prev').onclick=()=>{if(ready){player.previousVideo();setTimeout(paint,900);}};
@@ -3686,7 +5311,9 @@ function switchTape(want){
   showTape();
   warn('');
   if(!ready) return;
-  make(true);                          /* fresh player on the other tape */
+  /* fresh player on the other tape — rolling if we have left, cued if the
+     micro is still filling up, because that tape starts with the wheels too */
+  make(started);
 }
 
 /* ============================================================
@@ -3753,19 +5380,34 @@ function honk(){
     }
   }
 
+  hornT=0.62;                          /* the button in the cab lights with it */
   const b=$('horn');b.classList.remove('honk');void b.offsetWidth;b.classList.add('honk');
   duck(560);
 }
 $('horn').onclick=honk;
 $('sky').onclick=()=>setNight(!night);
+$('seat').onclick=()=>setSeat(!pov);
 
 addEventListener('keydown',e=>{
+  /* while the gate is up, space is the departure — unless the caret is in a
+     picker, where space is how you open it */
+  if(!started&&(e.key===' '||e.key==='Enter')
+     &&!(e.target&&e.target.closest&&e.target.closest('.sel'))){
+    e.preventDefault();depart();return;
+  }
   if(e.key==='ArrowRight')$('next').click();
   else if(e.key==='ArrowLeft')$('prev').click();
   else if(e.key===' '){e.preventDefault();$('play').click();}
   else if(e.key==='h'||e.key==='H')$('horn').click();
   else if(e.key==='n'||e.key==='N')$('sky').click();
+  else if(e.key==='v'||e.key==='V')$('seat').click();
 });
+
+/* and a tap anywhere on the gate does the same — click, not pointerdown, so it
+   counts as the user gesture YouTube wants */
+document.body.classList.add('gated');
+$('gate').addEventListener('click',depart);
+paintGate();
 </script>
 </body>
 </html>
