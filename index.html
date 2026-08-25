@@ -634,12 +634,18 @@ const rim=new THREE.DirectionalLight(0x7E97CC,0.42);rim.position.set(400,220,380
      glowAtNight  an additive beam or halo, absent by day
      swapAtNight  a painted sign that has a second, digital face
    ============================================================ */
-const dimList=[],lampList=[],glowList=[],swapList=[];
+const dimList=[],lampList=[],glowList=[],swapList=[],beamList=[];
 function dimAtNight(mat,f){dimList.push({mat,base:mat.color.clone(),f});return mat;}
 function lampAtNight(mat,dayHex,nightHex){
   lampList.push({mat,day:new THREE.Color(dayHex),night:new THREE.Color(nightHex)});return mat;}
 function glowAtNight(obj,max){
   obj.visible=false;obj.material.opacity=0;glowList.push({obj,max});return obj;}
+/* A real light, wound up and down with the dial rather than switched: a light
+   that goes invisible changes how many lights the scene has, and every shader
+   in it gets rebuilt on the spot - which is a stutter in the middle of the very
+   fade we are trying to make smooth. Held at zero it costs arithmetic, nothing
+   more. */
+function beamAtNight(light,max){light.intensity=0;beamList.push({light,max});return light;}
 function swapAtNight(mat,dayTex,nightTex){swapList.push({mat,day:dayTex,night:nightTex});return mat;}
 
 let nightWant=0,nightT=0,nightAt=-1,nightPhase=false;
@@ -718,6 +724,42 @@ function widenAt(u){
 const SBW=new Float64Array(RN+1);
 for(let i=0;i<=RN;i++) SBW[i]=widenAt((i%RN)/RN);
 
+/* ---- HOW FAR THE FINE MESH MAY REACH. The mesh along the road is swept: a row
+   of points laid across the tarmac and carried round the loop. A swept strip
+   folds through itself the moment it reaches past the middle of a bend, and
+   this road turns inside twelve metres in places - so the reach is capped by
+   the radius the road is actually turning on, and never pulled in tighter than
+   the bench, which has to keep ground under it. Whatever the sweep gives up the
+   wide lattice picks up: that one is a plain grid in x/z over a height field
+   with a single value per point, so it cannot fold however the road behaves. */
+const CORR=56,HOLE_BACK=16;      /* the widest reach, and how far inside its own
+                                    edge the lattice may be cut away */
+const SINK=26;                   /* and how far the lattice ducks under the fine
+                                    mesh where the two of them overlap */
+const SRCH=new Float64Array(RN+1);
+const reachFloor=i=>BENCH_H+SBW[i]+HOLE_BACK;
+for(let i=0;i<RN;i++){
+  const im=(i-1+RN)%RN,ip=(i+1)%RN;
+  const ax=RSX[im],az=RSZ[im],bx=RSX[i],bz=RSZ[i],cx=RSX[ip],cz=RSZ[ip];
+  const A=Math.hypot(bx-ax,bz-az),B=Math.hypot(cx-bx,cz-bz),C=Math.hypot(cx-ax,cz-az);
+  /* circumradius of three consecutive samples - the radius of the bend here */
+  const ar=Math.abs((bx-ax)*(cz-az)-(cx-ax)*(bz-az))/2;
+  const rad=ar<1e-6?1e9:A*B*C/(4*ar);
+  SRCH[i]=Math.max(reachFloor(i),Math.min(CORR,rad*0.8));
+}
+/* a radius read off three samples is jumpy, and a jumpy reach skews every quad
+   along the edge - so take the corners off it before anything is built on it */
+for(let pass=0;pass<6;pass++){
+  const t=Float64Array.from(SRCH);
+  for(let i=0;i<RN;i++) SRCH[i]=(t[(i-1+RN)%RN]+2*t[i]+t[(i+1)%RN])*0.25;
+}
+for(let i=0;i<RN;i++) SRCH[i]=Math.max(reachFloor(i),Math.min(CORR,SRCH[i]));
+SRCH[RN]=SRCH[0];
+function reachAt(u){
+  const f=(((u%1)+1)%1)*RN,i=Math.floor(f),t=f-i;
+  return SRCH[i]+(SRCH[(i+1)%RN]-SRCH[i])*t;
+}
+
 function nearRoad(x,z){
   let md=1e18,bi=0,bh=0;
   for(let i=0;i<RN;i++){
@@ -733,6 +775,7 @@ function nearRoad(x,z){
           y:RSY[bi]+(RSY[bi+1]-RSY[bi])*bh,
           bw:SBW[bi]+(SBW[bi+1]-SBW[bi])*bh,
           nx:SNX[bi],nz:SNZ[bi],           /* across the road, towards the hill */
+          rch:SRCH[bi]+(SRCH[bi+1]-SRCH[bi])*bh,   /* how far the fine mesh reaches */
           u:(bi+bh)/RN};                   /* and how far round the loop */
 }
 /* ---- THE KHOLA THE PUL CROSSES - a side stream coming down off the hill,
@@ -868,23 +911,32 @@ function groundColor(x,z,y,slope,kerb,grav,out){
   out.push(c.r*sh,c.g*sh,c.b*sh);
 }
 
-/* ---- THE WIDE LANDSCAPE. A four-metre grid cannot hold a road edge, so the
-   ground within CORR of the tarmac is its own much finer mesh, and every quad
-   of this one that falls entirely inside that band is left out - the corridor
-   covers the hole with thirty metres to spare. ---- */
-const CORR=208,HOLE=178;
+/* ---- THE WIDE LANDSCAPE. A six-metre grid cannot hold a road edge, so the
+   ground beside the tarmac is its own much finer mesh, and every quad of this
+   one that falls entirely inside that band is left out. Both are cut to the
+   same measurement - the corridor's own reach, less HOLE_BACK - so the hole can
+   never open a crack the sweep does not cover, however the reach varies. ---- */
 const SEG=LOW?144:204,SPAN=1250;
 {
   const gx=SEG+1,pos=[],col=[],idx=[],dd=new Float64Array(gx*gx);
   for(let j=0;j<gx;j++) for(let i=0;i<gx;i++){
     const x=(i/SEG-0.5)*SPAN,z=(j/SEG-0.5)*SPAN,y=terrainY(x,z);
-    pos.push(x,y,z);
-    dd[j*gx+i]=nearRoad(x,z).d;
+    const n=nearRoad(x,z);
+    /* Two meshes cannot share a surface. Both read the same height field, but
+       they cut it up differently, and on the face of the bhir a six-metre cell
+       and a road-aligned row disagree by metres - which is what tore the
+       hillside into ribbons. So inside the corridor's reach this one is dropped
+       clean out of sight and the fine mesh is left to do the job alone; the drop
+       eases off over the last three metres, where the fine mesh ends and this
+       one has to come back up to meet the real ground. */
+    const sink=SINK*(1-sstep(n.rch-3,n.rch,n.d));
+    pos.push(x,y-sink,z);
+    dd[j*gx+i]=n.d-(n.rch-HOLE_BACK);   /* how far inside the corridor's edge */
     groundColor(x,z,y,0,0,0,col);
   }
   for(let j=0;j<SEG;j++) for(let i=0;i<SEG;i++){
     const a=j*gx+i,b=a+1,c=a+gx,d=c+1;
-    if(dd[a]<HOLE&&dd[b]<HOLE&&dd[c]<HOLE&&dd[d]<HOLE) continue;
+    if(dd[a]<0&&dd[b]<0&&dd[c]<0&&dd[d]<0) continue;
     idx.push(a,c,b, b,c,d);
   }
   const g=new THREE.BufferGeometry();
@@ -898,17 +950,21 @@ const SEG=LOW?144:204,SPAN=1250;
    where the ground turns over - the lip of the bhir, the toe of the cut - and
    loose out towards the edges, where nobody is looking closely. ---- */
 {
-  const ST=LOW?400:640,K=LOW?18:26,COLS=2*K+5;
+  /* K columns each side. These used to be spread over two hundred metres; over
+     the fifty the sweep now covers, far fewer land just as much detail where it
+     counts - the step off the bench is under a fifth of a metre - and the wide
+     grid gets its triangles back to cover the ground the sweep gave up. */
+  const ST=LOW?400:640,K=LOW?12:16,COLS=2*K+5;
   const pos=[],col=[],idx=[],lat=[],yy=[];
   for(let i=0;i<=ST;i++){
     const u=(i%ST)/ST;
     const p=curve.getPointAt(u),tan=curve.getTangentAt(u);
     const nl=Math.hypot(tan.x,tan.z),sx=-tan.z/nl,sz=tan.x/nl;
-    const w=widenAt(u),bh=BENCH_H+w,bv=BENCH_V+w;
+    const w=widenAt(u),bh=BENCH_H+w,bv=BENCH_V+w,rch=reachAt(u);
     lat.length=0;
-    for(let k=K;k>=1;k--) lat.push(-(bv+(CORR-bv)*Math.pow(k/K,2.2)));
+    for(let k=K;k>=1;k--) lat.push(-(bv+(rch-bv)*Math.pow(k/K,2.2)));
     lat.push(-bv,-bv*0.5,0,bh*0.5,bh);
-    for(let k=1;k<=K;k++) lat.push(bh+(CORR-bh)*Math.pow(k/K,2.2));
+    for(let k=1;k<=K;k++) lat.push(bh+(rch-bh)*Math.pow(k/K,2.2));
     /* heights first, so the slope across the section is known when it comes to
        painting: a face steep enough to shed its soil is shown as rock */
     yy.length=0;
@@ -1158,10 +1214,31 @@ function lampBeam(len,rad,max,col){
   g.rotation.x=-Math.PI/2;g.position.z=-len/2;
   return glowAtNight(g,max);
 }
-/* the puddle the beams throw on the road ahead */
-function lampPool(w,l,ahead,max){
-  const p=new THREE.Mesh(new THREE.PlaneGeometry(w,l),ADD(glowTex,0xFFE9BE));
-  p.rotation.x=-Math.PI/2;p.position.set(0,0.06,-ahead);
+/* ---------- The footprint a dipped lamp leaves on the tarmac. A radial blob
+   was the wrong shape for this and read as a smudge floating near the bus: a
+   beam is narrow at the bumper, spreads as it goes, carries its hot spot a few
+   metres out rather than at the lamp, and is gone long before the blob's edge
+   was. Canvas top is the far end - v runs 1 at the top, and the plane is laid
+   down so +V points up the road. ---------- */
+const poolTex=tex((c,w,h)=>{
+  for(let y=0;y<h;y++){
+    const d=1-y/(h-1);                       /* 0 at the bumper, 1 at the far end */
+    /* bright a few metres out, not at the lamp, and shading off with distance */
+    const a=Math.pow(1-d,1.75)*(0.32+0.68*Math.min(1,d/0.17));
+    if(a<0.002) continue;
+    const hw=(0.17+0.83*d)*w/2;              /* the spread */
+    const g=c.createLinearGradient(w/2-hw,0,w/2+hw,0);
+    const A=k=>'rgba(255,240,206,'+(a*k).toFixed(4)+')';
+    g.addColorStop(0,A(0));g.addColorStop(0.26,A(0.5));g.addColorStop(0.5,A(1));
+    g.addColorStop(0.74,A(0.5));g.addColorStop(1,A(0));
+    c.fillStyle=g;c.fillRect(w/2-hw,y,hw*2,1);
+  }
+},64,256);
+/* the puddle the beams throw on the road ahead. One per lamp: where the two
+   overlap is where a dipped beam is brightest, which is how it looks. */
+function lampPool(w,l,ahead,max,xoff){
+  const p=new THREE.Mesh(new THREE.PlaneGeometry(w,l),ADD(poolTex,0xFFE9BE));
+  p.rotation.x=-Math.PI/2;p.position.set(xoff||0,0.06,-ahead);
   return glowAtNight(p,max);
 }
 
@@ -1242,9 +1319,12 @@ const CABREF={group:null,wheel:null,hands:[],arms:[],fringe:[],meter:[],
     const hl=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.36,0.14),
       lampAtNight(new THREE.MeshBasicMaterial({color:0xFFF2CC}),0xE8DCB4,0xFFFDF2));
     hl.position.set(sx*1.06,1.62,-4.50);micro.add(hl);
-    /* the lamp burning, and what it throws down the road */
-    const gl=lampGlow(2.2,0.95);gl.position.set(sx*1.06,1.62,-4.62);micro.add(gl);
-    const bm=lampBeam(17,2.5,0.5);bm.position.set(sx*1.02,1.6,-4.6);micro.add(bm);
+    /* the lamp burning, and the haze it lights in front of it. Both are much
+       weaker than they were: the light on the road is done properly below, so
+       these only have to say where it comes from - and from the driver's seat
+       the old pair sat on the windscreen like two moons. */
+    const gl=lampGlow(1.45,0.72);gl.position.set(sx*1.06,1.62,-4.62);micro.add(gl);
+    const bm=lampBeam(12,1.9,0.17);bm.position.set(sx*1.02,1.6,-4.6);micro.add(bm);
     const tl=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.86,0.12),
       lampAtNight(new THREE.MeshBasicMaterial({color:0xD8382A}),0xD8382A,0xFF4A34));
     tl.position.set(sx*1.38,1.72,3.85);micro.add(tl);
@@ -1252,7 +1332,35 @@ const CABREF={group:null,wheel:null,hands:[],arms:[],fringe:[],meter:[],
     const mir=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.3,0.1),dark);
     mir.position.set(sx*1.9,3.0,-3.3);micro.add(mir);
   }
-  micro.add(lampPool(12,34,17,0.66));
+
+  /* ---- THE ONE REAL LIGHT. Everything else after dark is painted: sprites and
+     additive cones, which cost nothing and light nothing. That is the right
+     trade for a lorry two bends away - it is the wrong one for the pair of lamps
+     the entire drive is seen by, and it is why the road ahead used to be a smear
+     on top of black. So the micro carries actual spot lights. The tarmac, the
+     cut face, the gabions and whoever is walking home all take them properly,
+     and they aim straight ahead while the road bends away, the way real lamps
+     do. Two: the dipped beam down the road, and a wide short one for the ground
+     by the bumper that a dipped beam never reaches. ---- */
+  /* Aimed well down, and not far. A lamp a metre and a half up throws almost
+     nothing onto tarmac forty metres off - the light arrives so nearly parallel
+     to the road that the surface barely takes any of it, which is why a real
+     lamp only looks bright out there because the road throws it back at the
+     driver, and no amount of intensity here will imitate that. What a real
+     light IS good for is the ground close in and everything standing up out of
+     it: the cut face, the gabions, a goat, whoever is walking home. So these
+     two do the near field honestly, and the beam down the road is painted. */
+  const dipAim=new THREE.Object3D();dipAim.position.set(0,-0.2,-19);micro.add(dipAim);
+  const dip=beamAtNight(new THREE.SpotLight(0xFFE7BC,0,64,0.56,0.72,1.0),3.1);
+  dip.position.set(0,1.66,-4.5);dip.target=dipAim;micro.add(dip);
+
+  /* the second one is a luxury: every extra light is arithmetic on every lit
+     surface in the scene, and a phone would rather have the frame */
+  if(!LOW){
+    const washAim=new THREE.Object3D();washAim.position.set(0,0,-7.5);micro.add(washAim);
+    const wash=beamAtNight(new THREE.SpotLight(0xFFDFAE,0,20,1.08,0.95,1.25),1.5);
+    wash.position.set(0,1.5,-4.4);wash.target=washAim;micro.add(wash);
+  }
 
 /* ---- The wheels, each on its own pair of pivots: the front two steer, and all
    four turn at whatever rate the road is going past underneath. Spokes on the
@@ -3801,16 +3909,28 @@ const WORKS={d:0,on:false};
       panel.position.set(0,8.62,-0.5);panel.rotation.x=0.34;g.add(panel);
       const batt=new THREE.Mesh(new THREE.BoxGeometry(0.44,0.7,0.5),boxL);
       batt.position.set(0,6.4,-0.28);g.add(batt);
-      /* and what it throws: the head burning, a cone, and a pool on the tarmac */
-      const gl=lampGlow(3.4,0.85,0xDDEBFF);gl.position.set(0,7.85,2.4);g.add(gl);
-      const cone=new THREE.Mesh(new THREE.ConeGeometry(3.4,8.2,10,1,true),
+      /* What it throws. The head burning, a little haze around it, and a pool
+         on the tarmac - and the pool has to be put on the road in world space,
+         not hung off this pole: the pole stands eight metres up the bank, so a
+         pool measured from here sat in the cutting behind the kerb where nobody
+         could see it, which is why these lamps used to light a hard cone of air
+         and nothing else. The cone is down to a suggestion for the same reason:
+         you see the air in a beam on a dusty night, not a solid wedge. */
+      const gl=lampGlow(2.3,0.7,0xDDEBFF);gl.position.set(0,7.85,2.4);g.add(gl);
+      const cone=new THREE.Mesh(new THREE.ConeGeometry(3.2,8.0,10,1,true),
         ADD(beamTex,0xCFE2FF));
       cone.material.side=THREE.DoubleSide;
-      cone.position.set(0,3.8,2.4);g.add(glowAtNight(cone,0.34));
-      const pool=new THREE.Mesh(new THREE.PlaneGeometry(11,8),ADD(glowTex,0xC6DCFF));
-      pool.rotation.x=-Math.PI/2;pool.position.set(0,0.09,2.6);
-      g.add(glowAtNight(pool,0.4));
+      cone.position.set(0,3.9,2.4);g.add(glowAtNight(cone,0.15));
       scene.add(g);
+      {
+        const rp=curve.getPointAt(u);
+        /* which way the road lies from the pole, so the pool leans that way */
+        const dx=rp.x-at.x,dz=rp.z-at.z,dl=Math.hypot(dx,dz)||1;
+        const pool=new THREE.Mesh(new THREE.PlaneGeometry(15,11),ADD(glowTex,0xC6DCFF));
+        pool.rotation.x=-Math.PI/2;
+        pool.position.set(rp.x-dx/dl*1.8,rp.y+0.13,rp.z-dz/dl*1.8);
+        scene.add(glowAtNight(pool,0.5));
+      }
     }
   }
 
@@ -4094,6 +4214,128 @@ let sunSprite=null,moonSprite=null,starField=null;
 
 const slow=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const LEN=curve.getLength();
+
+/* ---------- THE BEAM ON THE ROAD. A flat plane pinned to the micro cannot lie
+   on this road: it lifts off every crest, sinks into every dip, and on a bend it
+   points away into the hillside - which is why the light used to sit near the
+   bus like a decal that had come unstuck. So the beam is not a plane. It is a
+   strip built along the curve itself and re-laid every frame from wherever the
+   micro has got to, which means it rides the camber, drops over the lip and
+   swings round the bends for the same reason the wheels do: it is made out of
+   the road. The profile is baked into the vertex colours once - dark at the
+   bumper, hottest a few metres out, gone by the far end, soft at the edges
+   where a beam spreads - so the per-frame work is only the positions. ---------- */
+const BEAM_N=LOW?22:34,BEAM_M=11,BEAM_RUN=52,BEAM_START=4.0,BEAM_GAIN=0.62;
+const beamCarpet=(()=>{
+  const nv=(BEAM_N+1)*BEAM_M;
+  const pos=new Float32Array(nv*3),col=new Float32Array(nv*3),idx=[];
+  /* wound so the strip faces up: across-the-road crossed into along-the-road is
+     the way this road's normal points, and the other order is a strip you can
+     only see from underneath */
+  for(let i=0;i<BEAM_N;i++) for(let k=0;k<BEAM_M-1;k++){
+    const a=i*BEAM_M+k,b=a+1,c=a+BEAM_M,d=c+1;
+    idx.push(a,b,c, b,d,c);
+  }
+  /* Along the beam: nothing at the bumper, climbing over the first seven metres
+     - a lamp does not light the ground it is standing on - hottest at about ten,
+     and shaded off to nothing by the far end. Across it: a bell that reaches
+     zero at the edges, so the strip has no rim to give itself away. */
+  for(let i=0;i<=BEAM_N;i++){
+    const f=i/BEAM_N,s=f*BEAM_RUN;
+    const a=sstep(0,7,s)*Math.pow(1-f,2)*BEAM_GAIN;
+    for(let k=0;k<BEAM_M;k++){
+      const t=(k/(BEAM_M-1))*2-1;
+      const v=a*Math.pow(Math.max(0,Math.cos(t*Math.PI/2)),1.5),o=(i*BEAM_M+k)*3;
+      col[o]=v;col[o+1]=v*0.945;col[o+2]=v*0.79;   /* tungsten, not daylight */
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  g.setIndex(idx);
+  const mesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,
+    transparent:true,opacity:0,blending:THREE.AdditiveBlending,
+    side:THREE.DoubleSide,     /* over a crest the camera can end up under it */
+    depthWrite:false,fog:false}));
+  mesh.frustumCulled=false;      /* its bounds move every frame; culling would pop */
+  scene.add(mesh);
+  return glowAtNight(mesh,0.85);
+})();
+/* ---------- ROAD STUDS. Cat's eyes with an LED in them, the kind that have
+   been going into the new blacktop: amber down the centre line, white along
+   both edges. They are what makes a hill road legible after dark - the bend
+   shows as a curve of light long before the headlamps have reached round it -
+   and they are the one thing on this road that reads at night from any
+   distance, because they are the light rather than something lit by it.
+   Bodies and glow are separate: a small dull reflector by day, and a bloom
+   over the top of it that comes up with the dial. Not every one of them
+   works. They never do. ---------- */
+{
+  const GAP=7,N=Math.max(2,Math.round(LEN/GAP));
+  const EDGE=4.05;                     /* just inside the tarmac ribbon's edge */
+  /* Red, because that is what goes into this road: the solar studs the Division
+     sets along the edges and down the middle here are red, not the amber and
+     white of a motorway abroad, and a line of red is what you actually follow
+     round a bend at night in the pahad. The lens is a dull dark red by day. */
+  const LINES=[{off:0,col:0xFF2A18,day:0x6B2622},
+               {off:-EDGE,col:0xFF1F14,day:0x66231F},
+               {off:EDGE,col:0xFF1F14,day:0x66231F}];
+  const body=new THREE.BoxGeometry(0.17,0.055,0.17);
+  const gp=[],gc=[],tmpM=new THREE.Matrix4(),tmpQ=new THREE.Quaternion(),
+        one=new THREE.Vector3(1,1,1),tmpP=new THREE.Vector3();
+  for(const L of LINES){
+    const keep=[];
+    for(let i=0;i<N;i++){
+      const u=i/N;
+      /* one in sixteen is out - a lorry has been over it, or it never worked */
+      if(hash(i*3.7+L.off*11,i*0.31)<0.062) continue;
+      const p=curve.getPointAt(u),tan=curve.getTangentAt(u);
+      const nl=Math.hypot(tan.x,tan.z)||1e-6;
+      keep.push([p.x-tan.z/nl*L.off,p.y+0.10,p.z+tan.x/nl*L.off,
+                 Math.atan2(-tan.x,-tan.z)]);
+    }
+    const im=new THREE.InstancedMesh(body,
+      lampAtNight(new THREE.MeshBasicMaterial({color:L.col}),L.day,L.col),keep.length);
+    keep.forEach((k,i)=>{
+      tmpQ.setFromAxisAngle(new THREE.Vector3(0,1,0),k[3]);
+      im.setMatrixAt(i,tmpM.compose(tmpP.set(k[0],k[1],k[2]),tmpQ,one));
+      /* the bloom sits a shade above the lens so the tarmac cannot clip it */
+      gp.push(k[0],k[1]+0.06,k[2]);
+      const v=0.72+hash(i*1.9,k[0]*0.07)*0.28;      /* none of them match */
+      const c=new THREE.Color(L.col).multiplyScalar(v);
+      gc.push(c.r,c.g,c.b);
+    });
+    im.frustumCulled=false;            /* one draw for the whole loop either way */
+    scene.add(im);
+  }
+  const gg=new THREE.BufferGeometry();
+  gg.setAttribute('position',new THREE.Float32BufferAttribute(gp,3));
+  gg.setAttribute('color',new THREE.Float32BufferAttribute(gc,3));
+  const pts=new THREE.Points(gg,new THREE.PointsMaterial({map:glowTex,
+    size:LOW?0.62:0.72,sizeAttenuation:true,vertexColors:true,transparent:true,
+    opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:true}));
+  scene.add(glowAtNight(pts,0.95));
+}
+
+const BM_P=new THREE.Vector3(),BM_T=new THREE.Vector3();
+function layBeam(d0){
+  const at=beamCarpet.geometry.attributes.position,pos=at.array;
+  for(let i=0;i<=BEAM_N;i++){
+    const s=BEAM_START+(i/BEAM_N)*BEAM_RUN;
+    const u=((((d0+s)/LEN)%1)+1)%1;
+    BM_P.copy(curve.getPointAt(u));BM_T.copy(curve.getTangentAt(u));
+    const nl=Math.hypot(BM_T.x,BM_T.z)||1e-6;
+    const nx=-BM_T.z/nl,nz=BM_T.x/nl;             /* across the road */
+    const half=1.4+s*0.20;                        /* how wide the beam has got */
+    for(let k=0;k<BEAM_M;k++){
+      const t=(k/(BEAM_M-1))*2-1,off=LANE+t*half,o=(i*BEAM_M+k)*3;
+      pos[o]=BM_P.x+nx*off;
+      pos[o+1]=BM_P.y+0.17;                       /* clear of the tarmac ribbon */
+      pos[o+2]=BM_P.z+nz*off;
+    }
+  }
+  at.needsUpdate=true;
+}
 const BACK=0.0068,AHEAD=0.0030,CAM_Y=4.4,LOOK_Y=1.9;
 const CRUISE=slow?2:19,BRAKE=95;      /* BRAKE = curve units spent slowing down */
 /* ---------- WHO IS IN THE WAY ON THE ROAD. Everything on wheels is a length
@@ -4389,6 +4631,7 @@ function applySky(t){
   for(const d of dimList) d.mat.color.copy(d.base).multiplyScalar(1-(1-d.f)*e);
   for(const l of lampList) l.mat.color.copy(l.day).lerp(l.night,e);
   for(const g of glowList){g.obj.material.opacity=g.max*e;g.obj.visible=e>0.012;}
+  for(const b of beamList) b.light.intensity=b.max*e;
   if(sunSprite){sunSprite.material.opacity=1-e;sunSprite.visible=e<0.99;}
   if(moonSprite){moonSprite.material.opacity=e;moonSprite.visible=e>0.01;}
   if(starField){starField.material.opacity=e*0.95;starField.visible=e>0.01;}
@@ -4828,6 +5071,9 @@ function frame(now){
     pf.lookAt(camera.position);
     pf.scale.setScalar(0.9+Math.sin(now*0.0011+i*1.7)*0.12);
   }
+
+  /* the beam is re-laid from where the micro actually is, every frame */
+  if(nightT>0.02) layBeam(dist);
 
   for(const k of kites){const u=k.userData;u.a+=dt*u.sp*0.1;
     k.position.set(Math.cos(u.a)*u.r,u.y+Math.sin(now*0.0009+u.ph)*14,Math.sin(u.a)*u.r);}
