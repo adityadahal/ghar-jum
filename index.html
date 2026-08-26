@@ -1152,6 +1152,38 @@ scene.add(trunks,crowns,caps,pines,houseW,houseR);
 function tex(draw,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;
   draw(c.getContext('2d'),w,h);return new THREE.CanvasTexture(c);}
 
+/* ---------- ARTWORK THAT COMES FROM A FILE. Nearly every texture in here is
+   drawn on a canvas, but some of it is somebody else's: a logo on a hoarding,
+   the same logo down the side of a car. One Image per source, shared by
+   everything that asked for it, and every user gets a repaint when it lands -
+   the textures are all built long before the file has arrived, so nothing is
+   allowed to wait for it. Change BRAND_SRC and the whole scene re-brands. ---- */
+const BRAND_SRC='indrive.png';
+const ASSETS=new Map();
+function imageAsset(src,onReady){
+  let a=ASSETS.get(src);
+  if(!a){
+    a={img:new Image(),waiting:[]};ASSETS.set(src,a);
+    a.img.onload=()=>{const w=a.waiting;a.waiting=[];for(const f of w) f();};
+    a.img.src=src;
+  }
+  if(onReady){
+    if(a.img.complete&&a.img.naturalWidth) onReady(); else a.waiting.push(onReady);
+  }
+  return a.img;
+}
+const drawable=im=>!!(im&&im.complete&&im.naturalWidth);
+/* the artwork's own background colour, so whatever it is dropped onto matches it */
+const FIELD_PX=document.createElement('canvas');FIELD_PX.width=FIELD_PX.height=1;
+function fieldColor(im,fallback){
+  try{
+    const c=FIELD_PX.getContext('2d');
+    c.drawImage(im,0,0,2,2,0,0,1,1);
+    const d=c.getImageData(0,0,1,1).data;
+    return 'rgb('+d[0]+','+d[1]+','+d[2]+')';
+  }catch(err){ return fallback; }      /* cross-origin artwork cannot be read */
+}
+
 /* ---------- HEADLAMPS. No extra lights: a spot light per vehicle would
    recompile every shader in the scene and cost a phone its frame rate. A glow
    sprite, a beam that fades down its length and a pool of light on the tarmac
@@ -2107,6 +2139,135 @@ function motorbike(col,lit){
   helmet.position.set(0,2.63*0.78+0.62,0.42);g.add(helmet);
   return {g,rider};
 }
+/* ---------- FLEET LIVERY. The artwork the hoardings carry, cut as a side wrap:
+   a raked panel down the doors with the wordmark on it, the way a fleet decal
+   actually goes on. One texture, and the same one on both flanks: turning the
+   panel outwards mirrors it already, so the two sides come out mirror images of
+   each other in the car's own frame - which is what a real wrap is, and why it
+   reads left to right whichever side you walk up to. Flipping it as well, which
+   is what this did at first, mirrors it twice and puts the wordmark backwards
+   down the offside. ---- */
+let LIVERY=null;
+function fleetLivery(){
+  if(!LIVERY){
+    const cv=document.createElement('canvas');cv.width=512;cv.height=148;
+    const t=new THREE.CanvasTexture(cv);
+    const paint=()=>{
+      const c=cv.getContext('2d'),w=cv.width,h=cv.height;
+      c.clearRect(0,0,w,h);
+      const im=imageAsset(BRAND_SRC);
+      c.fillStyle=drawable(im)?fieldColor(im,'#C4F429'):'#C4F429';
+      c.beginPath();                     /* the raked panel, cut off square at neither end */
+      c.moveTo(w*0.07,h*0.13);c.lineTo(w*0.98,h*0.03);
+      c.lineTo(w*0.94,h*0.98);c.lineTo(w*0.02,h*0.86);
+      c.closePath();c.fill();
+      if(drawable(im)){                  /* the logo brings its own field with it */
+        const m=h*0.17;
+        const sc=Math.min((w*0.72)/im.naturalWidth,(h-m*2)/im.naturalHeight);
+        c.drawImage(im,(w-im.naturalWidth*sc)/2,(h-im.naturalHeight*sc)/2,
+                    im.naturalWidth*sc,im.naturalHeight*sc);
+      }
+      t.needsUpdate=true;
+    };
+    paint();imageAsset(BRAND_SRC,paint);
+    LIVERY=t;
+  }
+  return LIVERY;
+}
+
+/* the lit box on the roof, the way a taxi carries its own name up there. Same
+   artwork again, on a field wide enough to read across a carriageway. */
+let ROOF_TEX=null;
+function roofSign(){
+  if(ROOF_TEX) return ROOF_TEX;
+  const cv=document.createElement('canvas');cv.width=352;cv.height=96;
+  const t=new THREE.CanvasTexture(cv);
+  const paint=()=>{
+    const c=cv.getContext('2d'),w=cv.width,h=cv.height;
+    const im=imageAsset(BRAND_SRC);
+    c.fillStyle=drawable(im)?fieldColor(im,'#C4F429'):'#C4F429';
+    c.fillRect(0,0,w,h);
+    if(drawable(im)){
+      const m=h*0.16;
+      const sc=Math.min((w-m*2)/im.naturalWidth,(h-m*2)/im.naturalHeight);
+      c.drawImage(im,(w-im.naturalWidth*sc)/2,(h-im.naturalHeight*sc)/2,
+                  im.naturalWidth*sc,im.naturalHeight*sc);
+    }
+    t.needsUpdate=true;
+  };
+  paint();imageAsset(BRAND_SRC,paint);
+  ROOF_TEX=t;return t;
+}
+
+/* ---------- A LIVERIED CAR. The ride-hailing sedans that run this highway all
+   day, wrapped down both sides. Front is -Z, like everything else that shares
+   this road, and it sits on the same scale as the rest of the traffic rather
+   than a real one - next to a micro four metres tall a real car is a toy. ---- */
+function sedan(bodyCol){
+  const g=new THREE.Group();
+  const paint=MAT(bodyCol||0xF4F2EC),glass=MAT(0x18222E),
+        dark=MAT(0x1F1D1A),chrome=MAT(0xB6B2A8);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(2.98,1.06,7.30),paint);
+  body.position.y=1.20;g.add(body);
+  const cabin=new THREE.Mesh(new THREE.BoxGeometry(2.78,1.02,3.80),paint);
+  cabin.position.set(0,2.22,0.25);g.add(cabin);
+  const wind=new THREE.Mesh(new THREE.BoxGeometry(2.70,0.92,0.16),glass);
+  wind.position.set(0,2.22,-1.70);wind.rotation.x=-0.24;g.add(wind);
+  const back=new THREE.Mesh(new THREE.BoxGeometry(2.70,0.86,0.16),glass);
+  back.position.set(0,2.22,2.16);back.rotation.x=0.28;g.add(back);
+  const sill=new THREE.Mesh(new THREE.BoxGeometry(3.02,0.16,6.4),MAT(0x6E6A62));
+  sill.position.y=0.70;g.add(sill);
+  for(const sx of [-1,1]){
+    const side=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.78,3.30),glass);
+    side.position.set(sx*1.40,2.24,0.28);g.add(side);
+    /* the wrap, just clear of the panel so it cannot fight it for depth */
+    const wrap=new THREE.Mesh(new THREE.PlaneGeometry(4.40,0.92),
+      new THREE.MeshPhongMaterial({map:fleetLivery(),transparent:true,
+        flatShading:true,shininess:0}));
+    wrap.position.set(sx*1.505,1.26,0.20);
+    wrap.rotation.y=sx*Math.PI/2;
+    g.add(wrap);
+    const hl=new THREE.Mesh(new THREE.BoxGeometry(0.70,0.30,0.12),
+      lampAtNight(new THREE.MeshBasicMaterial({color:0xFFF6DA}),0xE8DEBE,0xFFFEF6));
+    hl.position.set(sx*1.00,1.42,-3.62);g.add(hl);
+    const gl=lampGlow(2.4,0.82,0xFFF6DE);gl.position.set(sx*1.00,1.42,-3.74);g.add(gl);
+    const bm=lampBeam(12,1.8,0.22);bm.position.set(sx*0.98,1.40,-3.72);g.add(bm);
+    const tl=new THREE.Mesh(new THREE.BoxGeometry(0.56,0.24,0.12),
+      lampAtNight(new THREE.MeshBasicMaterial({color:0xD8382A}),0xD8382A,0xFF4A34));
+    tl.position.set(sx*1.06,1.46,3.64);g.add(tl);
+    const tg=lampGlow(0.95,0.6,0xFF3A24);tg.position.set(sx*1.06,1.46,3.74);g.add(tg);
+    const mir=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.20,0.10),dark);
+    mir.position.set(sx*1.62,2.28,-1.42);g.add(mir);
+  }
+  g.add(lampPool(7.0,19,11,0.28));
+  /* the roof box. The sign faces front and back so it reads whichever way the
+     car is going past you, the case is dull plastic on the other four sides, and
+     it lights up after dark like the real ones do. */
+  const caseMat=MAT(0x211F1C);
+  const signMat=lampAtNight(new THREE.MeshBasicMaterial({map:roofSign()}),
+                            0xCFCCC4,0xFFFFFF);
+  const box=new THREE.Mesh(new THREE.BoxGeometry(1.62,0.44,0.30),
+    [caseMat,caseMat,caseMat,caseMat,signMat,signMat]);
+  box.position.set(0,2.95,0.10);g.add(box);
+  const feet=new THREE.Mesh(new THREE.BoxGeometry(1.30,0.10,0.20),caseMat);
+  feet.position.set(0,2.76,0.10);g.add(feet);
+  const halo=lampGlow(1.5,0.45,0xC8F04A);halo.position.set(0,2.97,0.10);g.add(halo);
+  const grille=new THREE.Mesh(new THREE.BoxGeometry(1.9,0.26,0.12),chrome);
+  grille.position.set(0,1.30,-3.64);g.add(grille);
+  for(const sx of [-1,1]) for(const sz of [-2.20,2.20]){
+    const wh=new THREE.Mesh(new THREE.CylinderGeometry(0.60,0.60,0.42,12),dark);
+    wh.rotation.z=Math.PI/2;wh.position.set(sx*1.42,0.60,sz);g.add(wh);
+    const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.26,0.46,9),chrome);
+    hub.rotation.z=Math.PI/2;hub.position.set(sx*1.44,0.60,sz);g.add(hub);
+  }
+  /* somebody is driving it, and somebody has paid for the ride */
+  const driver=makePerson(0x2C3E50,0.62);
+  driver.who.position.set(-0.62,1.02,-0.55);g.add(driver.who);
+  const fare=makePerson(0xB8562E,0.60);
+  fare.who.position.set(0.66,1.02,1.05);g.add(fare.who);
+  return {g,driver};
+}
+
 /* an oncoming micro, with its route board on the front where you can read it */
 function miniMicro(fromCity){
   const g=new THREE.Group();
@@ -3256,7 +3417,14 @@ const P_OUT=new THREE.Vector3(-2.55,-0.12,0.42);  /* down on the road beside it 
   });
 }
 
-/* ---------- ONCOMING TRAFFIC — bikes and micros headed back to Kathmandu ---------- */
+/* ---------- ONCOMING TRAFFIC — bikes, cars and micros headed back to Kathmandu.
+   How much road each one takes up, and how far apart its axles are. This used to
+   be asked as "is it a bike", which was fine while there were two kinds of thing
+   on the road and wrong the moment there were three. ---------- */
+const V_SIZE={bike:{halfW:0.62,halfLen:1.30,wb:1.36},
+              car: {halfW:1.55,halfLen:3.80,wb:4.40},
+              micro:{halfW:1.70,halfLen:3.40,wb:4.30}};
+const sizeOf=k=>V_SIZE[k]||V_SIZE.micro;
 const TRAFFIC=[];
 {
   for(let i=0;i<(LOW?1:2);i++){
@@ -3271,6 +3439,14 @@ const TRAFFIC=[];
     b.g.visible=false;scene.add(b.g);
     TRAFFIC.push({g:b.g,kind:'bike',rider:b.rider,speed:23+Math.random()*9,
                   on:false,wait:3+i*7+Math.random()*9,d:0});
+  }
+  /* the liveried cars. They run quicker than a loaded micro and slower than a
+     bike with nothing to lose, and there is always one of them about. */
+  for(let i=0;i<(LOW?1:3);i++){
+    const c=sedan([0xF4F2EC,0xE9E6DE,0xF6F4EE][i%3]);
+    c.g.visible=false;scene.add(c.g);
+    TRAFFIC.push({g:c.g,kind:'car',speed:20+Math.random()*7,
+                  on:false,wait:2+i*9+Math.random()*7,d:0});
   }
 }
 /* where something is in relation to the roadworks: − still short of them,
@@ -3360,7 +3536,7 @@ function moveTraffic(dt,now){
     v.off=off;
     /* everything coming the other way sits on the road the same way we do:
        bridged between its axles, nose up the ukalo and down the oralo */
-    const po=roadPose(u2,-1,v.kind==='bike'?1.36:4.3);
+    const po=roadPose(u2,-1,sizeOf(v.kind).wb);
     const bd=roadBend(u2,-1),lat=v.speed*v.speed*bd;
     v.g.position.set(po.at.x+sidev.x*off,po.at.y+0.1,po.at.z+sidev.z*off);
     /* a bus leans out of a bend on its springs; a bike leans into one, which is
@@ -3936,6 +4112,196 @@ const WORKS={d:0,on:false};
     }
   }
 
+  /* ---- HOARDINGS. The ad boards that stand on every straight and every bend
+     with a view: angle iron out of the ground, the hoarding bolted to the front
+     of it, and a pair of floodlights on a bracket underneath so it still earns
+     its rent after dark. Some are up on the cut bank to the right, some out on
+     the lip of the bhir to the left where you cannot miss them, and the big ones
+     are away up the hillside, three times the size and leaning down at the road
+     because that is the only way they read from it. Every one is turned to face
+     the traffic rather than the tarmac.
+
+     What they carry comes from BRAND_SRC at the top of the file, the same as the
+     cars; ADS immediately below is where they stand. ---- */
+  {
+    /* ---- WHAT GOES ON THE BOARDS. Each one is set on its own, by number, in
+       config.json beside this file - no code to edit:
+
+           { "default": "indrive.png",
+             "boards": { "3": "ads/pasal.png", "11": { "src": "ads/big.jpg" } } }
+
+       A src is anything an <img> can load. Boards the file does not mention keep
+       "default"; with no config.json at all they keep BRAND_SRC, which is what
+       the cars carry too. Whatever you give a board is drawn at its own aspect
+       over its own background colour, taken from the artwork's top-left pixel,
+       so nothing is ever stretched and the field always matches - hand it any
+       shape it comes in. Until artwork loads, or if none ever does, the board
+       paints its own number and the pixel size to draw for, so you know which
+       entry in config.json you are looking at from the road. ---- */
+    const AD_LOGO=BRAND_SRC;
+    const AD_BG='#C4F429';        /* the fallback field, if the artwork won't load */
+    const AD_PAD=0.09;            /* quiet margin round the artwork, as a fraction */
+    const AD_SKEW=26*Math.PI/180; /* how far off the road axis a board is held */
+
+    /* u is where round the loop, 0 to 1. off is metres across from the centre
+       line, and its sign is the whole difference: POSITIVE is uphill, into the
+       cut bank on the driver's right; NEGATIVE is out towards the bhir on the
+       left, where the bench runs out at about nine metres - so keep the left-hand
+       ones inside eight and a half or they will be standing in mid-air. w and h
+       are the board in metres, post is how far off the ground its bottom edge
+       is, and tilt leans it down at the road for the ones up the hill. */
+    const ADS=[
+      /* right, on the bank above the drain */
+      {u:0.055,off:12.5,w:7.6,h:3.6,post:5.0},
+      {u:0.196,off:12.0,w:6.8,h:3.2,post:4.6},
+      {u:0.372,off:13.0,w:8.2,h:3.9,post:5.4},
+      {u:0.508,off:11.5,w:6.4,h:3.0,post:4.4},
+      {u:0.688,off:12.8,w:7.8,h:3.7,post:5.2},
+      {u:0.842,off:12.2,w:7.0,h:3.3,post:4.8},
+      /* left, out on the lip of the bhir. These are the ones you cannot miss:
+         they stand at road level a few metres off the kerb, and the bottom edge
+         is above the roof of a micro so they never block the road ahead. */
+      {u:0.112,off:-8.0,w:7.4,h:3.5,post:5.2},
+      {u:0.262,off:-8.2,w:6.8,h:3.2,post:5.0},
+      {u:0.598,off:-8.0,w:7.8,h:3.7,post:5.4},
+      {u:0.918,off:-8.2,w:7.0,h:3.3,post:5.1},
+      /* and up on the hillside, where they have to be big to read at all */
+      {u:0.145,off:94,w:24,h:11,post:9,tilt:0.16},
+      {u:0.452,off:126,w:30,h:14,post:11,tilt:0.19},
+      {u:0.742,off:106,w:26,h:12,post:10,tilt:0.17}
+    ];
+    /* One canvas per board, at the board's own shape so nothing on it comes out
+       stretched, and one Image per distinct src shared between every board that
+       asked for it. The boards paint themselves once now and again when the
+       artwork arrives. */
+    const adFaces=[];
+    function paintFace(f){
+      const c=f.cv.getContext('2d'),w=f.cv.width,h=f.cv.height,im=f.img;
+      const ready=drawable(im);
+      c.fillStyle=ready?fieldColor(im,AD_BG):AD_BG;c.fillRect(0,0,w,h);
+      if(ready){
+        const m=Math.min(w,h)*AD_PAD;
+        const s=Math.min((w-m*2)/im.naturalWidth,(h-m*2)/im.naturalHeight);
+        const dw=im.naturalWidth*s,dh=im.naturalHeight*s;
+        c.drawImage(im,(w-dw)/2,(h-dh)/2,dw,dh);
+      }else{
+        /* an empty frame: corner ticks, its number, and what to draw for it */
+        const lw=Math.max(3,Math.round(h*0.035));
+        c.strokeStyle='#14161A';c.lineWidth=lw;
+        c.strokeRect(lw,lw,w-lw*2,h-lw*2);
+        const t=Math.round(h*0.16);c.lineWidth=Math.max(2,Math.round(h*0.018));
+        for(const [sx,sy] of [[1,1],[-1,1],[1,-1],[-1,-1]]){
+          const x=sx>0?lw*3:w-lw*3,y=sy>0?lw*3:h-lw*3;
+          c.beginPath();c.moveTo(x,y);c.lineTo(x+sx*t,y);
+          c.moveTo(x,y);c.lineTo(x,y+sy*t);c.stroke();
+        }
+        c.fillStyle='#14161A';c.textAlign='center';c.textBaseline='middle';
+        c.font='bold '+Math.round(h*0.30)+'px sans-serif';
+        c.fillText('AD SLOT '+f.n,w/2,h*0.41);
+        c.font='bold '+Math.round(h*0.105)+'px sans-serif';
+        c.fillText(w+' × '+h+'   ·   '+f.wm+' × '+f.hm+' m',w/2,h*0.68);
+      }
+      f.tex.needsUpdate=true;
+    }
+    /* ---- config.json. The boards go up and paint themselves with the built-in
+       artwork first - the scene is not going to sit and wait on a file - and each
+       one repaints when its own arrives. The swap is hung off the image's own
+       load, so a src that 404s never gets applied and that board simply keeps
+       what it had: a typo in here costs one board, not the scene. No file, bad
+       JSON, or opened over file:// and every board keeps the default. ---- */
+    function readConfig(){
+      fetch('config.json',{cache:'no-store'})
+        .then(r=>r.ok?r.json():null)
+        .then(cfg=>{
+          if(!cfg||typeof cfg!=='object') return;
+          const list=cfg.boards;
+          const named=n=>Array.isArray(list)?list[n-1]
+                        :(list&&typeof list==='object'?list[n]:undefined);
+          for(const f of adFaces){
+            const e=named(f.n);
+            const src=(e&&typeof e==='object'?e.src:e)||cfg.default;
+            if(!src||src===f.src) continue;
+            imageAsset(src,()=>{f.src=src;f.img=imageAsset(src);paintFace(f);});
+          }
+        })
+        .catch(()=>{});          /* no config is a normal way to run this */
+    }
+    const legMat=MAT(0x7C8087),backMat=MAT(0x474B52),canMat=MAT(0x2E3238);
+    for(let i=0;i<ADS.length;i++){
+      const a=ADS[i],foot=Math.max(2.2,a.w*0.22);
+      let spot=null,su=a.u;
+      for(let t=0;t<7;t++){          /* nudge along if somebody has the ground */
+        su=(a.u+t*0.005)%1;
+        const r=roadside(su,a.off);
+        if(spotFree(r.at.x,r.at.z,foot)){spot=r;break;}
+      }
+      if(!spot) continue;
+      /* Turned to face the traffic, not the tarmac. Square across the road a
+         hoarding is edge-on to everybody coming up it and readable by nobody, so
+         it is aimed at a vehicle back down the road in our own lane, the way the
+         distance poles are. How far back is worked out from the angle we want it
+         held at rather than fixed: the same setback that gives a board a hundred
+         metres up the hillside a good oblique leaves one eight metres off the
+         kerb a one-degree sliver, because what matters is how far it stands from
+         the lane, not how far up the road you look. */
+      const aim=a.aim||Math.abs(a.off-LANE)/Math.tan(AD_SKEW);
+      const aimAt=roadside(((su-aim/LEN0)%1+1)%1,LANE).at;
+      const g=new THREE.Group();facing(g,spot.at,aimAt);scene.add(g);
+      solid(spot.at.x,spot.at.z,foot);
+
+      const H=a.post+a.h*0.5;         /* how far up the middle of the board sits */
+      const legR=a.w*0.024;
+      /* The posts stand behind the hoarding and it is bolted to the front of
+         them, the way they are actually built - and the way that matters here,
+         because posts on the panel's own centreline came through the artwork. */
+      const D=Math.max(0.22,a.h*0.055);          /* how deep the frame is */
+      const zb=legR+0.07+D*0.5;                  /* the frame, clear of the posts */
+      const nleg=Math.max(2,Math.round(a.w/7));
+      const legH=a.post+a.h*0.85;
+      for(let k=0;k<nleg;k++){
+        const x=(-0.5+k/(nleg-1))*a.w*0.7;
+        const leg=new THREE.Mesh(
+          new THREE.CylinderGeometry(a.w*0.016,legR,legH,7),legMat);
+        leg.position.set(x,legH/2,0);g.add(leg);
+      }
+      /* the panel itself, leaning down at the road if it is up the hill */
+      const panel=new THREE.Group();
+      panel.position.set(0,H,0);panel.rotation.x=a.tilt||0;g.add(panel);
+      const back=new THREE.Mesh(
+        new THREE.BoxGeometry(a.w*1.04,a.h*1.07,D),backMat);
+      back.position.z=zb;panel.add(back);
+      const cv=document.createElement('canvas');
+      cv.width=1024;cv.height=Math.max(96,Math.round(1024*a.h/a.w));
+      const f={cv,tex:new THREE.CanvasTexture(cv),n:i+1,wm:a.w,hm:a.h,
+               img:null,src:a.src||AD_LOGO};
+      f.img=imageAsset(f.src,()=>paintFace(f));
+      adFaces.push(f);paintFace(f);
+      /* floodlit, so it stays readable after dark - but not as bright as noon */
+      const face=new THREE.Mesh(new THREE.PlaneGeometry(a.w,a.h),
+        dimAtNight(new THREE.MeshBasicMaterial({map:f.tex}),0.72));
+      face.position.z=zb+D*0.5+0.02;panel.add(face);
+
+      const nfl=Math.max(2,Math.round(a.w/5));
+      for(let k=0;k<nfl;k++){
+        const x=(-0.5+(k+0.5)/nfl)*a.w*0.84, y=-a.h*0.58;
+        const z0=zb+D*0.5;
+        const arm=new THREE.Mesh(
+          new THREE.BoxGeometry(a.w*0.014,a.h*0.15,a.h*0.09),legMat);
+        arm.position.set(x,y+a.h*0.04,z0+a.h*0.045);panel.add(arm);
+        const can=new THREE.Mesh(
+          new THREE.BoxGeometry(a.w*0.05,a.h*0.07,a.h*0.05),canMat);
+        can.position.set(x,y-a.h*0.04,z0+a.h*0.10);panel.add(can);
+        const lens=new THREE.Mesh(new THREE.PlaneGeometry(a.w*0.042,a.h*0.048),
+          lampAtNight(new THREE.MeshBasicMaterial({color:0x8A8F96}),0x8A8F96,0xFFF2CC));
+        lens.position.set(x,y-a.h*0.025,z0+a.h*0.125);lens.rotation.x=-0.95;
+        panel.add(lens);
+        const gl=lampGlow(Math.min(2.3,a.h*0.28),0.5,0xFFEBBE);
+        gl.position.set(x,y-a.h*0.01,z0+a.h*0.15);panel.add(gl);
+      }
+    }
+    readConfig();                /* every board is up; now go and see what it wants */
+  }
+
   /* ---- DISTANCE POLES — the green boards counting the destination down.
      Each is painted for the ground it stands on, so the number drops as we
      drive, and they are all repainted whenever the route changes or the sun
@@ -4347,9 +4713,9 @@ const CRUISE=slow?2:19,BRAKE=95;      /* BRAKE = curve units spent slowing down 
 const HERO_U={d:0,dir:1,off:LANE,halfW:1.8,halfLen:4.3,on:true,hero:true};
 const USERS=[HERO_U];
 function joinRoad(v){
+  const z=sizeOf(v.kind);
   v.dir=-1;v.off=-LANE;
-  v.halfW=v.kind==='bike'?0.62:1.7;
-  v.halfLen=v.kind==='bike'?1.3:3.4;
+  v.halfW=z.halfW;v.halfLen=z.halfLen;
   USERS.push(v);
 }
 /* is there room on the loop at d for this vehicle, front and back? */
