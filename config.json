@@ -1,0 +1,37 @@
+{
+  "_readme": [
+    "Artwork for the roadside hoardings. Edit a board's src and reload - nothing",
+    "in index.html needs touching. A src is anything an <img> can load: a file",
+    "beside index.html, a path into a folder, a full URL, or a data: URI.",
+    "",
+    "Boards not listed here fall back to \"default\". A src that fails to load",
+    "leaves that board showing whatever it was built with, so a typo costs you",
+    "one board rather than the scene.",
+    "",
+    "\"draw\" is the pixel size the board's canvas is, i.e. what to draw for it.",
+    "Artwork of any shape works - it is fitted to the board over its own",
+    "background colour rather than stretched - but matching gets you the",
+    "sharpest result. Where a board stands, and how big it is, is set by ADS in",
+    "index.html; this file is only what goes on it."
+  ],
+
+  "default": "indrive.png",
+
+  "boards": {
+    "1":  { "src": "indrive.png", "note": "right bank  · 7.6 x 3.6 m", "draw": "1024x485" },
+    "2":  { "src": "indrive.png", "note": "right bank  · 6.8 x 3.2 m", "draw": "1024x482" },
+    "3":  { "src": "indrive.png", "note": "right bank  · 8.2 x 3.9 m", "draw": "1024x487" },
+    "4":  { "src": "indrive.png", "note": "right bank  · 6.4 x 3.0 m", "draw": "1024x480" },
+    "5":  { "src": "indrive.png", "note": "right bank  · 7.8 x 3.7 m", "draw": "1024x486" },
+    "6":  { "src": "indrive.png", "note": "right bank  · 7.0 x 3.3 m", "draw": "1024x483" },
+
+    "7":  { "src": "indrive.png", "note": "left, bhir lip · 7.4 x 3.5 m", "draw": "1024x484" },
+    "8":  { "src": "indrive.png", "note": "left, bhir lip · 6.8 x 3.2 m", "draw": "1024x482" },
+    "9":  { "src": "indrive.png", "note": "left, bhir lip · 7.8 x 3.7 m", "draw": "1024x486" },
+    "10": { "src": "indrive.png", "note": "left, bhir lip · 7.0 x 3.3 m", "draw": "1024x483" },
+
+    "11": { "src": "indrive.png", "note": "hillside · 24 x 11 m", "draw": "1024x469" },
+    "12": { "src": "indrive.png", "note": "hillside · 30 x 14 m", "draw": "1024x478" },
+    "13": { "src": "indrive.png", "note": "hillside · 26 x 12 m", "draw": "1024x473" }
+  }
+}
